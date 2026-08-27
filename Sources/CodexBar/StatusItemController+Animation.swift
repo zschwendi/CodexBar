@@ -268,7 +268,13 @@ extension StatusItemController {
 
         let showUsed = self.settings.usageBarsShowUsed
         let showBrandPercent = self.settings.menuBarShowsBrandIconWithPercent
-        let providerStack = self.codexGrokBotMenuBarStackValues(showUsed: showUsed)
+        // The two-pill stack is a consumption meter: an empty lane means unused capacity, while a full lane
+        // means the quota is exhausted. Keep its fill direction stable even when menu text is configured as
+        // "% remaining".
+        let providerStack = self.codexGrokBotMenuBarStackValues(showUsed: true)
+        let accessibleProviderStack = showUsed
+            ? providerStack
+            : self.codexGrokBotMenuBarStackValues(showUsed: false)
         // Provider-specific by design: the Codex and Grok Bot stack keeps Codex as its stable renderer identity.
         let primaryProvider: UsageProvider = providerStack == nil ? self.primaryProviderForUnifiedIcon() : .codex
         let style: IconStyle = providerStack == nil ? self.store.iconStyle : .codex
@@ -276,7 +282,7 @@ extension StatusItemController {
         let snapshot = self.store.menuBarSnapshot(for: primaryProvider.instanceID)
         let warningFlash = self.quotaWarningFlashActive(provider: primaryProvider)
 
-        let accessibilityTitle = providerStack.map {
+        let accessibilityTitle = accessibleProviderStack.map {
             self.codexGrokBotAccessibilityTitle(values: $0, showUsed: showUsed)
         } ?? Self.statusItemAccessibilityTitle(
             isDebugApp: Self.isDebugApp(bundleIdentifier: Bundle.main.bundleIdentifier))

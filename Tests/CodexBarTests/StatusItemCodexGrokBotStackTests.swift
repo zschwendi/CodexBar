@@ -41,6 +41,23 @@ struct StatusItemCodexGrokBotStackTests {
         #expect(controller.storeIconObservationSignature() != baselineObservation)
     }
 
+    @Test
+    func `merged icon fill shows consumed usage while title can show remaining capacity`() throws {
+        let (settings, _, controller) = self.makeController(
+            suiteName: "StatusItemCodexGrokBotStackTests-consumed-fill",
+            grokBotUsed: 5)
+        defer { controller.releaseStatusItemsForTesting() }
+        settings.usageBarsShowUsed = false
+
+        controller.applyIcon(phase: nil)
+
+        let renderSignature = try #require(controller.lastAppliedMergedIconRenderSignature)
+        #expect(renderSignature.contains("primary=40.000"))
+        #expect(renderSignature.contains("weekly=5.000"))
+        #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Codex 60% remaining") == true)
+        #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Grok Bot 95% remaining") == true)
+    }
+
     private func makeController(
         suiteName: String,
         grokBotUsed: Double)

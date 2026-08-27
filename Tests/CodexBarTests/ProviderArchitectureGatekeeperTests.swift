@@ -2491,7 +2491,7 @@ struct ProviderArchitectureGatekeeperTests {
             reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
         AllowedProviderConstruct(
             path: "Sources/CodexBar/StatusItemController+Animation.swift",
-            line: 597,
+            line: 603,
             anchor: "guard isLoading, style == .warp, let phase else {",
             expectedProviderIDs: ["warp"],
             expectedReferenceCount: 1,
@@ -2499,7 +2499,7 @@ struct ProviderArchitectureGatekeeperTests {
             reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
         AllowedProviderConstruct(
             path: "Sources/CodexBar/StatusItemController+Animation.swift",
-            line: 950,
+            line: 956,
             anchor: "if provider == .kiro {",
             expectedProviderIDs: ["cursor", "kiro"],
             expectedReferenceCount: 2,
