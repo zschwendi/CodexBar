@@ -3,6 +3,11 @@ import CodexBarCore
 
 // swiftlint:disable:next type_body_length
 enum IconRenderer {
+    enum LanePresentation: Hashable {
+        case automatic
+        case codexGrokBot
+    }
+
     struct QuotaLayoutPolicy: Hashable {
         let reservesMissingSecondaryLane: Bool
         let treatsExhaustedSecondaryAsMissing: Bool
@@ -58,6 +63,7 @@ enum IconRenderer {
         let style: Int
         let indicator: Int
         let hideCritters: Bool
+        let lanePresentation: LanePresentation
         let quotaLayoutPolicy: QuotaLayoutPolicy
     }
 
@@ -144,6 +150,7 @@ enum IconRenderer {
         tilt: CGFloat = 0,
         statusIndicator: ProviderStatusIndicator = .none,
         hideCritters: Bool = false,
+        lanePresentation: LanePresentation = .automatic,
         quotaLayoutPolicy: QuotaLayoutPolicy? = nil) -> NSImage
     {
         let quotaLayoutPolicy = quotaLayoutPolicy ?? .style(style)
@@ -156,8 +163,9 @@ enum IconRenderer {
                 let trackStrokeAlpha: CGFloat = stale ? 0.28 : 0.44
                 let fillColor = baseFill.withAlphaComponent(stale ? 0.55 : 1.0)
 
-                let barWidthPx = 30 // 15 pt at 2×, uses the slot better without touching edges.
-                let barXPx = (Self.canvasPx - barWidthPx) / 2
+                // The custom Codex/Grok Bot stack reserves a narrow leading column for lane badges.
+                let barWidthPx = lanePresentation == .codexGrokBot ? 26 : 30
+                let barXPx = lanePresentation == .codexGrokBot ? 9 : (Self.canvasPx - barWidthPx) / 2
 
                 func drawBar(
                     rectPx: RectPx,
@@ -685,7 +693,9 @@ enum IconRenderer {
                 let missingSecondary = usesMissingSecondaryLayout && !weeklyAvailable
 
                 // "Hide critters" renders plain meter bars: suppress all face/decoration twists.
-                let decorations = hideCritters ? ProviderIconDecorations() : providerPresentation?.iconDecorations ?? []
+                let decorations = hideCritters || lanePresentation == .codexGrokBot
+                    ? ProviderIconDecorations()
+                    : providerPresentation?.iconDecorations ?? []
                 let twistFace = decorations.contains(.face)
                 let twistNotches = decorations.contains(.notches)
                 let twistGemini = decorations.contains(.gemini)
@@ -693,9 +703,15 @@ enum IconRenderer {
                 let twistFactory = decorations.contains(.factory)
                 let twistWarp = decorations.contains(.warp)
 
-                if let bottomValue, bottomValue > 0, topValue == nil,
-                   !quotaLayoutPolicy.reservesMissingSecondaryLane,
-                   !usesMissingSecondaryLayout
+                if lanePresentation == .codexGrokBot {
+                    // These lanes have fixed identities. Keep both tracks in place even while one provider is
+                    // unavailable or reports exactly 0%, rather than promoting a lane or substituting credits.
+                    drawBar(rectPx: topRectPx, remaining: topValue)
+                    drawBar(rectPx: bottomRectPx, remaining: bottomValue)
+                    Self.drawCodexGrokBotLaneBadges(color: fillColor)
+                } else if let bottomValue, bottomValue > 0, topValue == nil,
+                          !quotaLayoutPolicy.reservesMissingSecondaryLane,
+                          !usesMissingSecondaryLayout
                 {
                     // Some providers surface their only meaningful quota in the secondary slot.
                     drawBar(
@@ -817,6 +833,7 @@ enum IconRenderer {
                 style: self.styleKey(style),
                 indicator: self.indicatorKey(statusIndicator),
                 hideCritters: hideCritters,
+                lanePresentation: lanePresentation,
                 quotaLayoutPolicy: quotaLayoutPolicy)
             if let cached = self.cachedIcon(for: key) {
                 return cached
@@ -830,6 +847,32 @@ enum IconRenderer {
     }
 
     // swiftlint:enable function_body_length
+
+    /// Tiny monochrome lane identities for the custom two-provider stack. The upper ring echoes the
+    /// Codex knot at menu-bar scale; the lower robot head identifies Grok Bot without widening the status item.
+    private static func drawCodexGrokBotLaneBadges(color: NSColor) {
+        let context = NSGraphicsContext.current?.cgContext
+        context?.saveGState()
+        context?.setShouldAntialias(false)
+
+        color.setStroke()
+        let codexRing = NSBezierPath(ovalIn: Self.grid.rect(x: 1, y: 22, w: 7, h: 7))
+        codexRing.lineWidth = Self.grid.pt(2)
+        codexRing.stroke()
+
+        color.setFill()
+        let botHead = NSBezierPath(
+            roundedRect: Self.grid.rect(x: 1, y: 5, w: 7, h: 6),
+            xRadius: Self.grid.pt(1),
+            yRadius: Self.grid.pt(1))
+        botHead.fill()
+        NSBezierPath(rect: Self.grid.rect(x: 4, y: 11, w: 1, h: 2)).fill()
+        NSBezierPath(rect: Self.grid.rect(x: 3, y: 13, w: 3, h: 1)).fill()
+
+        context?.clear(Self.grid.rect(x: 3, y: 7, w: 1, h: 1))
+        context?.clear(Self.grid.rect(x: 6, y: 7, w: 1, h: 1))
+        context?.restoreGState()
+    }
 
     /// Morph helper: unbraids a simplified knot into our bar icon.
     static func makeMorphIcon(progress: Double, style: IconStyle, hideCritters: Bool = false) -> NSImage {

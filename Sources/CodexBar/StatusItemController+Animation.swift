@@ -12,6 +12,10 @@ extension StatusItemController {
     private nonisolated static let loadingAnimationMaxContinuousDuration: TimeInterval = 30.0
     func needsMenuBarIconAnimation() -> Bool {
         if self.shouldMergeIcons {
+            if self.codexGrokBotMenuBarStackValues(showUsed: self.settings.usageBarsShowUsed) != nil {
+                // Provider-specific by design: the fixed two-lane stack animates either of its owning providers.
+                return self.shouldAnimate(provider: .codex) || self.shouldAnimate(provider: .cursor)
+            }
             let primaryProvider = self.primaryProviderForUnifiedIcon()
             return self.shouldAnimate(provider: primaryProvider)
         }
@@ -262,13 +266,23 @@ extension StatusItemController {
             return true
         }
 
-        let style = self.store.iconStyle
         let showUsed = self.settings.usageBarsShowUsed
         let showBrandPercent = self.settings.menuBarShowsBrandIconWithPercent
-        let primaryProvider = self.primaryProviderForUnifiedIcon()
+        let providerStack = self.codexGrokBotMenuBarStackValues(showUsed: showUsed)
+        // Provider-specific by design: the Codex and Grok Bot stack keeps Codex as its stable renderer identity.
+        let primaryProvider: UsageProvider = providerStack == nil ? self.primaryProviderForUnifiedIcon() : .codex
+        let style: IconStyle = providerStack == nil ? self.store.iconStyle : .codex
         let resolverStyle = self.store.style(for: primaryProvider)
         let snapshot = self.store.menuBarSnapshot(for: primaryProvider.instanceID)
         let warningFlash = self.quotaWarningFlashActive(provider: primaryProvider)
+
+        let accessibilityTitle = providerStack.map {
+            self.codexGrokBotAccessibilityTitle(values: $0, showUsed: showUsed)
+        } ?? Self.statusItemAccessibilityTitle(
+            isDebugApp: Self.isDebugApp(bundleIdentifier: Bundle.main.bundleIdentifier))
+        if button.accessibilityTitle() != accessibilityTitle {
+            button.setAccessibilityTitle(accessibilityTitle)
+        }
 
         if let layoutResult = self.applyStoredUnifiedMenuBarLayoutIfNeeded(
             provider: primaryProvider,
@@ -285,16 +299,23 @@ extension StatusItemController {
             snapshot: snapshot,
             style: resolverStyle,
             showUsed: showUsed)
-        var primary = resolved?.primary
-        var weekly = resolved?.secondary
-        var credits = self.menuBarCreditsRemainingForIcon(provider: primaryProvider, snapshot: snapshot)
-        var stale = self.store.isStale(provider: primaryProvider)
+        // Provider-specific by design: this presentation maps Codex and Cursor-owned Grok Bot data to fixed lanes.
+        var primary = providerStack?.codex ?? resolved?.primary
+        var weekly = providerStack?.grokBot ?? resolved?.secondary
+        var credits = providerStack == nil
+            ? self.menuBarCreditsRemainingForIcon(provider: primaryProvider, snapshot: snapshot)
+            : nil
+        var stale = providerStack == nil
+            ? self.store.isStale(provider: primaryProvider)
+            : self.store.isStale(provider: .codex) || self.store.isStale(provider: .cursor)
         var morphProgress: Double?
 
-        let needsAnimation = self.needsMenuBarIconAnimation()
+        let needsAnimation = providerStack == nil
+            ? self.needsMenuBarIconAnimation()
+            : self.shouldAnimate(provider: .codex) || self.shouldAnimate(provider: .cursor)
         if let phase, needsAnimation {
             var pattern = self.animationPattern
-            if style == .combined, pattern == .unbraid {
+            if style == .combined || providerStack != nil, pattern == .unbraid {
                 pattern = .cylon
             }
             if pattern == .unbraid {
@@ -315,10 +336,10 @@ extension StatusItemController {
             }
         }
 
-        let blink: CGFloat = style == .combined ? 0 : self.blinkAmount(for: primaryProvider)
-        let wiggle: CGFloat = style == .combined ? 0 : self.wiggleAmount(for: primaryProvider)
+        let blink: CGFloat = style == .combined || providerStack != nil ? 0 : self.blinkAmount(for: primaryProvider)
+        let wiggle: CGFloat = style == .combined || providerStack != nil ? 0 : self.wiggleAmount(for: primaryProvider)
         let tilt: CGFloat =
-            style == .combined ? 0 : self.tiltAmount(for: primaryProvider) * .pi / 28
+            style == .combined || providerStack != nil ? 0 : self.tiltAmount(for: primaryProvider) * .pi / 28
 
         let statusIndicator = self.store.statusIndicator(for: primaryProvider)
         if showBrandPercent,
@@ -338,6 +359,7 @@ extension StatusItemController {
                 "text=\(displayText ?? "nil")",
                 "warningFlash=\(warningFlash ? "1" : "0")",
                 "anim=\(needsAnimation ? "1" : "0")",
+                "lanes=\(providerStack == nil ? "automatic" : "codex-grok-bot")",
                 "hideCritters=\(self.settings.menuBarHidesCritters ? "1" : "0")",
                 "highContrast=\(self.shouldUseHighContrastStatusItemContent ? "1" : "0")",
             ].joined(separator: "|")
@@ -364,6 +386,7 @@ extension StatusItemController {
                 "status=\(statusIndicator.rawValue)",
                 "warningFlash=\(warningFlash ? "1" : "0")",
                 "anim=\(needsAnimation ? "1" : "0")",
+                "lanes=\(providerStack == nil ? "automatic" : "codex-grok-bot")",
                 "hideCritters=\(self.settings.menuBarHidesCritters ? "1" : "0")",
                 "highContrast=\(self.shouldUseHighContrastStatusItemContent ? "1" : "0")",
             ].joined(separator: "|")
@@ -394,6 +417,7 @@ extension StatusItemController {
                 "tilt=\(Self.iconSignatureValue(Double(tilt)))",
                 "warningFlash=\(warningFlash ? "1" : "0")",
                 "anim=\(needsAnimation ? "1" : "0")",
+                "lanes=\(providerStack == nil ? "automatic" : "codex-grok-bot")",
                 "hideCritters=\(self.settings.menuBarHidesCritters ? "1" : "0")",
                 "highContrast=\(self.shouldUseHighContrastStatusItemContent ? "1" : "0")",
             ].joined(separator: "|")
@@ -412,6 +436,7 @@ extension StatusItemController {
                 tilt: tilt,
                 statusIndicator: statusIndicator,
                 hideCritters: self.settings.menuBarHidesCritters,
+                lanePresentation: providerStack == nil ? .automatic : .codexGrokBot,
                 quotaLayoutPolicy: .provider(primaryProvider))
             self.setButtonContent(
                 image: warningFlash ? Self.quotaWarningFlashImage(base: image) : image,

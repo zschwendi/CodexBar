@@ -9,7 +9,10 @@ extension StatusItemController {
         let providerSignatures: String
         let primaryProvider: UsageProvider?
         if mergeIcons {
-            let primary = self.primaryProviderForUnifiedIcon()
+            // Provider-specific by design: the fixed Codex and Grok Bot stack observes Codex as its primary lane.
+            let primary = self.codexGrokBotMenuBarStackValues(showUsed: self.settings.usageBarsShowUsed) == nil
+                ? self.primaryProviderForUnifiedIcon()
+                : .codex
             primaryProvider = primary
             providerSignatures = self.providerStoreIconObservationSignature(
                 for: primary,
@@ -30,6 +33,7 @@ extension StatusItemController {
             "brandPercent=\(showBrandPercent ? "1" : "0")",
             "hideCritters=\(self.settings.menuBarHidesCritters ? "1" : "0")",
             "needsAnimation=\(self.needsMenuBarIconAnimation() ? "1" : "0")",
+            "codexGrok=\(self.codexGrokBotMenuBarCandidateSignature() ?? "nil")",
             providerSignatures,
         ].joined(separator: "|")
     }

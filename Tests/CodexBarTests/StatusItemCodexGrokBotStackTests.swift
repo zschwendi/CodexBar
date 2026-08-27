@@ -1,0 +1,119 @@
+import AppKit
+import CodexBarCore
+import Testing
+@testable import CodexBar
+
+@MainActor
+@Suite(.serialized)
+struct StatusItemCodexGrokBotStackTests {
+    @Test
+    func `stack maps codex above grok bot for used and remaining modes`() throws {
+        let (_, _, controller) = self.makeController(
+            suiteName: "StatusItemCodexGrokBotStackTests-values",
+            grokBotUsed: 5)
+        defer { controller.releaseStatusItemsForTesting() }
+
+        let used = try #require(controller.codexGrokBotMenuBarStackValues(showUsed: true))
+        #expect(used == CodexGrokBotMenuBarStackValues(codex: 40, grokBot: 5))
+
+        let remaining = try #require(controller.codexGrokBotMenuBarStackValues(showUsed: false))
+        #expect(remaining == CodexGrokBotMenuBarStackValues(codex: 60, grokBot: 95))
+    }
+
+    @Test
+    func `merged icon fixes codex and grok bot lanes and observes grok changes`() throws {
+        let (_, store, controller) = self.makeController(
+            suiteName: "StatusItemCodexGrokBotStackTests-render",
+            grokBotUsed: 5)
+        defer { controller.releaseStatusItemsForTesting() }
+
+        let baselineObservation = controller.storeIconObservationSignature()
+        controller.applyIcon(phase: nil)
+
+        let renderSignature = try #require(controller.lastAppliedMergedIconRenderSignature)
+        #expect(renderSignature.contains("provider=codex"))
+        #expect(renderSignature.contains("primary=40.000"))
+        #expect(renderSignature.contains("weekly=5.000"))
+        #expect(renderSignature.contains("lanes=codex-grok-bot"))
+        #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Grok Bot 5% used") == true)
+
+        store._setSnapshotForTesting(Self.cursorSnapshot(grokBotUsed: 12), provider: .cursor)
+        #expect(controller.storeIconObservationSignature() != baselineObservation)
+    }
+
+    private func makeController(
+        suiteName: String,
+        grokBotUsed: Double)
+        -> (SettingsStore, UsageStore, StatusItemController)
+    {
+        let settings = testSettingsStore(suiteName: suiteName)
+        settings.statusChecksEnabled = false
+        settings.refreshFrequency = .manual
+        settings.mergeIcons = true
+        settings.menuBarShowsBrandIconWithPercent = false
+        settings.menuBarShowsHighestUsage = true
+        settings.usageBarsShowUsed = true
+
+        let registry = ProviderRegistry.shared
+        if let codex = registry.metadata[.codex] {
+            settings.setProviderEnabled(provider: .codex, metadata: codex, enabled: true)
+        }
+        if let cursor = registry.metadata[.cursor] {
+            settings.setProviderEnabled(provider: .cursor, metadata: cursor, enabled: true)
+        }
+        if let claude = registry.metadata[.claude] {
+            settings.setProviderEnabled(provider: .claude, metadata: claude, enabled: false)
+        }
+
+        let fetcher = UsageFetcher()
+        let store = UsageStore(
+            fetcher: fetcher,
+            browserDetection: BrowserDetection(cacheTTL: 0),
+            settings: settings)
+        store._setSnapshotForTesting(
+            UsageSnapshot(
+                primary: RateWindow(
+                    usedPercent: 40,
+                    windowMinutes: 300,
+                    resetsAt: nil,
+                    resetDescription: nil),
+                secondary: RateWindow(
+                    usedPercent: 80,
+                    windowMinutes: 10080,
+                    resetsAt: nil,
+                    resetDescription: nil),
+                updatedAt: Date()),
+            provider: .codex)
+        store._setSnapshotForTesting(Self.cursorSnapshot(grokBotUsed: grokBotUsed), provider: .cursor)
+
+        let controller = StatusItemController(
+            store: store,
+            settings: settings,
+            account: fetcher.loadAccountInfo(),
+            updater: DisabledUpdaterController(),
+            preferencesSelection: PreferencesSelection(),
+            statusBar: testStatusBar())
+        return (settings, store, controller)
+    }
+
+    private static func cursorSnapshot(grokBotUsed: Double) -> UsageSnapshot {
+        UsageSnapshot(
+            primary: RateWindow(
+                usedPercent: 91,
+                windowMinutes: 10080,
+                resetsAt: nil,
+                resetDescription: nil),
+            secondary: nil,
+            extraRateWindows: [
+                NamedRateWindow(
+                    id: CursorSandUsageStatus.extraWindowID,
+                    title: CursorSandUsageStatus.extraWindowTitle,
+                    window: RateWindow(
+                        usedPercent: grokBotUsed,
+                        windowMinutes: 10080,
+                        resetsAt: nil,
+                        resetDescription: nil)),
+            ],
+            updatedAt: Date())
+    }
+}
