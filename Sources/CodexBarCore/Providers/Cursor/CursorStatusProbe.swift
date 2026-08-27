@@ -863,7 +863,7 @@ public struct CursorStatusProbe: Sendable {
             browserDetection: browserDetection,
             browserCookieImportOrder: Self.defaultBrowserCookieImportOrder,
             urlSession: urlSession,
-            appAuthStore: CursorAppAuthStore(),
+            appAuthStore: CursorDesktopAuthStore(),
             persistAppAuthSession: { session in
                 await CursorSessionStore.shared.persistAppSession(session)
             },
@@ -893,7 +893,7 @@ public struct CursorStatusProbe: Sendable {
             browserDetection: browserDetection,
             browserCookieImportOrder: Self.defaultBrowserCookieImportOrder,
             urlSession: urlSession,
-            appAuthStore: CursorAppAuthStore(),
+            appAuthStore: CursorDesktopAuthStore(),
             persistAppAuthSession: { session in
                 await CursorSessionStore.shared.persistAppSession(session)
             },

@@ -61,7 +61,7 @@ extension CursorStatusProbe {
             storedCookies.removeAll(where: CursorAppAuthSession.isPersistedCookie)
         }
 
-        let hasExplicitBrowserSelection = cachedEntry?.sourceLabel != Self.appAuthSourceLabel &&
+        let hasExplicitBrowserSelection = !Self.isDesktopAuthSourceLabel(cachedEntry?.sourceLabel) &&
             cachedEntry?.authenticationFailurePolicy == .stopFallback
         if allowAppAuthFallback, !hasExplicitBrowserSelection {
             let context = AppSessionFetchContext(
@@ -84,7 +84,7 @@ extension CursorStatusProbe {
            !cached.cookieHeader.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         {
             #if os(macOS)
-            if cached.sourceLabel == Self.appAuthSourceLabel {
+            if Self.isDesktopAuthSourceLabel(cached.sourceLabel) {
                 if CookieHeaderCache.clearIfCurrent(provider: .cursor, expected: cached) {
                     cacheObservation = cacheObservation.afterOwnedClear()
                 }
@@ -217,7 +217,10 @@ extension CursorStatusProbe {
     }
 
     #if os(macOS)
-    private static let appAuthSourceLabel = "Cursor.app local auth"
+    private static func isDesktopAuthSourceLabel(_ sourceLabel: String?) -> Bool {
+        guard let sourceLabel else { return false }
+        return CursorDesktopAuthSource.from(sourceLabel: sourceLabel) != nil
+    }
 
     private func fetchPreferredAppSession<Value: Sendable>(
         context: AppSessionFetchContext<Value>) async throws -> AppSessionFetchResult<Value>
@@ -227,11 +230,11 @@ extension CursorStatusProbe {
             loadedAppSession = try self.appAuthStore.loadSession()
         } catch {
             loadedAppSession = nil
-            context.log("Cursor.app local auth read failed: \(error.localizedDescription)")
+            context.log("Cursor desktop app local auth read failed: \(error.localizedDescription)")
         }
 
-        // A session read directly from Cursor owns freshness. Only use CodexBar's persisted copy when the
-        // Cursor database has no session at all; an expired app session must fall through to browser cookies.
+        // A session read directly from a desktop app owns freshness. Only use CodexBar's persisted copy when
+        // neither app has a session at all; an expired app session must fall through to browser cookies.
         let persistedAppSession: CursorAppAuthSession? = if loadedAppSession == nil {
             Self.persistedAppSession(cachedEntry: context.cachedEntry, storedCookies: context.storedCookies)
         } else {
@@ -242,7 +245,8 @@ extension CursorStatusProbe {
         }
         guard appSession.isUsable else {
             if loadedAppSession != nil {
-                context.log("Cursor.app local auth is expired or invalid; falling back to browser cookies")
+                context.log("\(appSession.source.appDisplayName) local auth is expired or invalid; " +
+                    "falling back to browser cookies")
             }
             let storedCookies = Self.removingPersistedAppSessions(from: context.storedCookies)
             await CursorSessionStore.shared.setCookies(storedCookies)
@@ -252,17 +256,18 @@ extension CursorStatusProbe {
         let appIdentity = appSession.identity
         Self.logIdentityMismatchIfNeeded(
             appIdentity: appIdentity,
+            appSource: appSession.source,
             cachedEntry: context.cachedEntry,
             storedCookies: context.storedCookies,
             log: context.log)
-        context.log("Using Cursor.app local auth")
+        context.log("Using \(appSession.source.sourceLabel)")
         let cookieHeader = try appSession.cookieHeader()
         do {
             let value = try await context.perform(cookieHeader, appIdentity)
             await self.persistAppAuthSession(appSession)
             let reconciliation = ResolvedSessionReconciliationContext(
                 cookieHeader: cookieHeader,
-                sourceLabel: Self.appAuthSourceLabel,
+                sourceLabel: appSession.source.sourceLabel,
                 cacheObservation: context.cacheObservation,
                 perform: context.perform,
                 log: context.log)
@@ -270,7 +275,7 @@ extension CursorStatusProbe {
             return .succeeded(reconciled)
         } catch let error as CursorStatusProbeError {
             guard case .notLoggedIn = error else { throw error }
-            context.log("Cursor.app local auth was rejected; falling back to browser cookies")
+            context.log("\(appSession.source.appDisplayName) local auth was rejected; falling back to browser cookies")
             let storedCookies = Self.removingPersistedAppSessions(from: context.storedCookies)
             await CursorSessionStore.shared.setCookies(storedCookies)
             return .resumeFallback(storedCookies: storedCookies)
@@ -284,16 +289,19 @@ extension CursorStatusProbe {
         storedCookies: [HTTPCookie]) -> CursorAppAuthSession?
     {
         if let cachedEntry,
-           cachedEntry.sourceLabel == Self.appAuthSourceLabel,
-           let session = CursorAppAuthSession.from(cookieHeader: cachedEntry.cookieHeader)
+           let source = CursorDesktopAuthSource.from(sourceLabel: cachedEntry.sourceLabel),
+           let session = CursorAppAuthSession.from(cookieHeader: cachedEntry.cookieHeader, source: source)
         {
             return session
         }
-        let storedHeader = storedCookies
-            .filter(CursorAppAuthSession.isPersistedCookie)
-            .map { "\($0.name)=\($0.value)" }
-            .joined(separator: "; ")
-        return CursorAppAuthSession.from(cookieHeader: storedHeader)
+        for cookie in storedCookies where CursorAppAuthSession.isPersistedCookie(cookie) {
+            guard let source = CursorDesktopAuthSource.from(persistedCookie: cookie) else { continue }
+            let storedHeader = "\(cookie.name)=\(cookie.value)"
+            if let session = CursorAppAuthSession.from(cookieHeader: storedHeader, source: source) {
+                return session
+            }
+        }
+        return nil
     }
 
     private static func removingPersistedAppSessions(from cookies: [HTTPCookie]) -> [HTTPCookie] {
@@ -302,13 +310,14 @@ extension CursorStatusProbe {
 
     private static func logIdentityMismatchIfNeeded(
         appIdentity: CursorSessionIdentity?,
+        appSource: CursorDesktopAuthSource,
         cachedEntry: CookieHeaderCache.Entry?,
         storedCookies: [HTTPCookie],
         log: (String) -> Void)
     {
         guard let appIdentity else { return }
         let browserIdentity: CursorSessionIdentity? = if let cachedEntry,
-                                                         cachedEntry.sourceLabel != Self.appAuthSourceLabel
+                                                         !Self.isDesktopAuthSourceLabel(cachedEntry.sourceLabel)
         {
             CursorSessionIdentity.from(cookieHeader: cachedEntry.cookieHeader)
         } else {
@@ -321,8 +330,9 @@ extension CursorStatusProbe {
 
         let appLabel = appIdentity.displayLabel ?? "unknown account"
         let browserLabel = browserIdentity.displayLabel ?? "unknown account"
-        let message = "Cursor.app account \(appLabel) differs from browser session \(browserLabel); "
-            + "using Cursor.app account \(appLabel)"
+        let appName = appSource.appDisplayName
+        let message = "\(appName) account \(appLabel) differs from browser session \(browserLabel); "
+            + "using \(appName) account \(appLabel)"
         CodexBarLog.logger(LogCategories.provider(.cursor)).warning(message)
         log(message)
     }

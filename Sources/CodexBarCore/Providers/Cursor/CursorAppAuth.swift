@@ -103,12 +103,51 @@ struct CursorSessionIdentity: Equatable, Sendable {
 #endif
 
 #if os(macOS)
+enum CursorDesktopAuthSource: String, CaseIterable, Sendable {
+    case cursorApp
+    case grokBotApp
+
+    var sourceLabel: String {
+        switch self {
+        case .cursorApp: "Cursor.app local auth"
+        case .grokBotApp: "Grok Bot.app local auth"
+        }
+    }
+
+    var appDisplayName: String {
+        switch self {
+        case .cursorApp: "Cursor.app"
+        case .grokBotApp: "Grok Bot.app"
+        }
+    }
+
+    var persistedCookieMarker: String {
+        "CodexBar \(self.sourceLabel)"
+    }
+
+    static func from(sourceLabel: String) -> Self? {
+        self.allCases.first { $0.sourceLabel == sourceLabel }
+    }
+
+    static func from(persistedCookie cookie: HTTPCookie) -> Self? {
+        guard cookie.name == "WorkosCursorSessionToken" else { return nil }
+        return self.allCases.first { $0.persistedCookieMarker == cookie.comment }
+    }
+}
+
 struct CursorAppAuthSession: Equatable, Sendable {
-    static let persistedCookieMarker = "CodexBar Cursor.app local auth"
-
     let accessToken: String
+    let source: CursorDesktopAuthSource
 
-    static func from(cookieHeader: String) -> Self? {
+    init(accessToken: String, source: CursorDesktopAuthSource = .cursorApp) {
+        self.accessToken = accessToken
+        self.source = source
+    }
+
+    static func from(
+        cookieHeader: String,
+        source: CursorDesktopAuthSource = .cursorApp) -> Self?
+    {
         for component in cookieHeader.split(separator: ";") {
             let pair = component.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             guard pair.count == 2,
@@ -121,7 +160,7 @@ struct CursorAppAuthSession: Equatable, Sendable {
                   let token = parts.last,
                   token.split(separator: ".", omittingEmptySubsequences: false).count >= 2
             else { return nil }
-            return Self(accessToken: token)
+            return Self(accessToken: token, source: source)
         }
         return nil
     }
@@ -176,7 +215,7 @@ struct CursorAppAuthSession: Equatable, Sendable {
             .path: "/",
             .expires: self.expiresAt(),
             .secure: true,
-            .comment: Self.persistedCookieMarker,
+            .comment: self.source.persistedCookieMarker,
         ]
         guard let cookie = HTTPCookie(properties: properties) else {
             throw CursorStatusProbeError.parseFailed("Cursor.app session cookie could not be created")
@@ -185,7 +224,7 @@ struct CursorAppAuthSession: Equatable, Sendable {
     }
 
     static func isPersistedCookie(_ cookie: HTTPCookie) -> Bool {
-        cookie.name == "WorkosCursorSessionToken" && cookie.comment == self.persistedCookieMarker
+        CursorDesktopAuthSource.from(persistedCookie: cookie) != nil
     }
 
     private func payload() throws -> [String: Any] {
@@ -327,6 +366,32 @@ struct CursorAppAuthStore: CursorAppAuthSessionProviding {
     private struct SQLiteReadFailure: Error {
         let code: Int32
         let message: String
+    }
+}
+
+struct CursorDesktopAuthStore: CursorAppAuthSessionProviding {
+    private static let logger = CodexBarLog.logger(LogCategories.provider(.cursor, scope: "desktop-auth"))
+
+    private let grokBotStore: any CursorAppAuthSessionProviding
+    private let cursorAppStore: any CursorAppAuthSessionProviding
+
+    init(
+        grokBotStore: any CursorAppAuthSessionProviding = GrokBotAppAuthStore(),
+        cursorAppStore: any CursorAppAuthSessionProviding = CursorAppAuthStore())
+    {
+        self.grokBotStore = grokBotStore
+        self.cursorAppStore = cursorAppStore
+    }
+
+    func loadSession() throws -> CursorAppAuthSession? {
+        do {
+            if let session = try self.grokBotStore.loadSession(), session.isUsable {
+                return session
+            }
+        } catch {
+            Self.logger.warning("Grok Bot local auth read failed: \(error.localizedDescription)")
+        }
+        return try self.cursorAppStore.loadSession()
     }
 }
 

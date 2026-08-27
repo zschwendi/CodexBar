@@ -1095,6 +1095,35 @@ extension CursorStatusProbeTests {
     }
 
     @Test
+    func `automatic auth identifies Grok Bot when its account differs from browser`() async throws {
+        await CursorSessionStore.shared.clearCookies()
+        CookieHeaderCache.clear(provider: .cursor)
+        defer { CookieHeaderCache.clear(provider: .cursor) }
+        let appToken = try makeCursorAppAuthToken(subject: "auth0|grok-bot-user", email: "bot@example.com")
+        let browserToken = try makeCursorAppAuthToken(subject: "workos|browser-user", email: "web@example.com")
+        CookieHeaderCache.store(
+            provider: .cursor,
+            cookieHeader: "WorkosCursorSessionToken=browser-user%3A%3A\(browserToken)",
+            sourceLabel: "Chrome")
+        let logs = CursorStringRecorder()
+        let probe = CursorStatusProbe(
+            browserDetection: BrowserDetection(cacheTTL: 0),
+            browserCookieImportOrder: [],
+            appAuthStore: CursorAppAuthSessionProviderStub(session: CursorAppAuthSession(
+                accessToken: appToken,
+                source: .grokBotApp)))
+
+        let label = try await probe.resolveSession(logger: { logs.record($0) }, perform: { _, identity in
+            identity?.displayLabel ?? "browser"
+        })
+
+        #expect(label == "bot@example.com")
+        #expect(logs.snapshot().contains(where: {
+            $0.contains("Grok Bot.app account bot@example.com differs from browser session web@example.com")
+        }))
+    }
+
+    @Test
     func `automatic auth falls back to cookies when app session is expired`() async throws {
         await CursorSessionStore.shared.clearCookies()
         CookieHeaderCache.clear(provider: .cursor)

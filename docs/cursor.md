@@ -8,12 +8,18 @@ read_when:
 
 # Cursor provider
 
-On macOS, Cursor can reuse Cursor.app's local session or a cursor.com browser session. Automatic mode prefers a usable
-Cursor.app session and falls back to cookies when the app token is missing, expired, invalid, or rejected.
+On macOS, Cursor can reuse Grok Bot.app's or Cursor.app's local session, or a cursor.com browser session. Automatic mode
+prefers a usable Grok Bot session (so its dedicated weekly allowance is visible), then Cursor.app, and falls back to
+cookies when the desktop tokens are missing, expired, invalid, or rejected.
 
 ## Data sources + fallback order
 
-1) **Cursor.app local auth** (preferred in Automatic mode)
+1) **Grok Bot.app local auth** (preferred in Automatic mode)
+   - Reads the active Cursor account from `~/Library/Application Support/Grok Bot/sand-secrets.json`.
+   - Decrypts the short-lived access token in memory with the existing `Grok Bot Safe Storage` macOS Keychain item.
+   - Never writes the decrypted token back to Grok Bot's store.
+
+2) **Cursor.app local auth**
    - Reads Cursor.app's VS Code-style global state DB for `ItemTable` key `cursorAuth/accessToken`.
    - Files consulted by SQLite:
      - macOS main DB: `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`
@@ -26,11 +32,11 @@ Cursor.app session and falls back to cookies when the app token is missing, expi
    - When an already-cached cookie exposes a different email or subject, CodexBar logs the mismatch and keeps the
      chosen Cursor.app identity on the usage snapshot/card. It does not combine app usage with browser identity.
 
-2) **Cached cookie header**
+3) **Cached cookie header**
    - Stored after successful browser import.
    - Keychain cache: `com.steipete.codexbar.cache` (account `cookie.cursor`).
 
-3) **Browser cookie import**
+4) **Browser cookie import**
    - Cookie order from provider metadata (default: Safari → Chrome → Firefox).
    - Domain filters: `cursor.com`, `cursor.sh`.
    - Cookie names required (any one counts):
@@ -38,11 +44,11 @@ Cursor.app session and falls back to cookies when the app token is missing, expi
      - `__Secure-next-auth.session-token`
      - `next-auth.session-token`
 
-4) **Stored session cookies** (fallback)
+5) **Stored session cookies** (fallback)
    - Legacy sessions captured by older CodexBar releases remain readable.
    - Stored at: `~/Library/Application Support/CodexBar/cursor-session.json`.
 
-On macOS, explicit `--source web` skips Cursor.app local auth and uses only the cookie ladder. A configured Manual cookie
+On macOS, explicit `--source web` skips desktop-app local auth and uses only the cookie ladder. A configured Manual cookie
 header remains an explicit override. `codexbar usage --provider cursor --source auto --verbose` prints the selected
 automatic path and is the quickest live-read check after Cursor login.
 
@@ -100,7 +106,7 @@ The cost summary's Cursor section is opt-in: it only fetches when **Show cost su
 Unlike Claude and Codex cost (scanned from local session logs on this machine), Cursor cost is remote, account-wide data from the cursor.com dashboard, so it covers usage from every machine on the account.
 
 Auth reuses the exact status-probe session resolution and cookie-source policy:
-- **Auto**: Cursor.app local auth → cached cookie header → browser cookie import → stored session.
+- **Auto**: Grok Bot.app local auth → Cursor.app local auth → cached cookie header → browser cookie import → stored session.
 - **Manual**: a non-empty pasted cookie header is required and forwarded as-is, so cost and status share the same session; an empty header fails closed instead of falling back to another account.
 - **Off**: the fetch is skipped in the app; `codexbar cost --provider cursor` fails explicitly and `/cost` returns a provider error row.
 
