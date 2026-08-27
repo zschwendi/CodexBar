@@ -74,13 +74,14 @@ final class IconRendererScreenshotRenderTests: XCTestCase {
         let directory = URL(fileURLWithPath: dir, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        let icon = IconRenderer.makeIcon(
+        let icon = try IconRenderer.makeIcon(
             primaryRemaining: 40,
             weeklyRemaining: 5,
             creditsRemaining: nil,
             stale: false,
             style: .codex,
             lanePresentation: .codexGrokBot,
+            laneBrandIcons: Self.codexGrokBotBrandIcons(),
             quotaLayoutPolicy: .provider(.codex))
         let data = try XCTUnwrap(
             Self.proofPNG(
@@ -91,6 +92,12 @@ final class IconRendererScreenshotRenderTests: XCTestCase {
         let url = directory.appendingPathComponent("codex-grok-bot-menu-bar-icon.png")
         try data.write(to: url, options: .atomic)
         print("Wrote \(url.lastPathComponent)")
+    }
+
+    private static func codexGrokBotBrandIcons() throws -> IconRenderer.LaneBrandIcons {
+        try IconRenderer.LaneBrandIcons(
+            top: XCTUnwrap(ProviderBrandIcon.image(for: .codex)),
+            bottom: XCTUnwrap(ProviderBrandIcon.image(for: .grok)))
     }
 
     private static func proofPNG(

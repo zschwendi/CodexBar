@@ -8,6 +8,11 @@ enum IconRenderer {
         case codexGrokBot
     }
 
+    struct LaneBrandIcons {
+        let top: NSImage
+        let bottom: NSImage
+    }
+
     struct QuotaLayoutPolicy: Hashable {
         let reservesMissingSecondaryLane: Bool
         let treatsExhaustedSecondaryAsMissing: Bool
@@ -64,6 +69,7 @@ enum IconRenderer {
         let indicator: Int
         let hideCritters: Bool
         let lanePresentation: LanePresentation
+        let showsLaneBrandIcons: Bool
         let quotaLayoutPolicy: QuotaLayoutPolicy
     }
 
@@ -151,6 +157,7 @@ enum IconRenderer {
         statusIndicator: ProviderStatusIndicator = .none,
         hideCritters: Bool = false,
         lanePresentation: LanePresentation = .automatic,
+        laneBrandIcons: LaneBrandIcons? = nil,
         quotaLayoutPolicy: QuotaLayoutPolicy? = nil) -> NSImage
     {
         let quotaLayoutPolicy = quotaLayoutPolicy ?? .style(style)
@@ -163,9 +170,20 @@ enum IconRenderer {
                 let trackStrokeAlpha: CGFloat = stale ? 0.28 : 0.44
                 let fillColor = baseFill.withAlphaComponent(stale ? 0.55 : 1.0)
 
-                // The custom Codex/Grok Bot stack uses two equal, centered pill tracks.
-                let barWidthPx = lanePresentation == .codexGrokBot ? 32 : 30
-                let barXPx = (Self.canvasPx - barWidthPx) / 2
+                // The custom Codex/Grok Bot stack reserves a compact label column for the two brand marks.
+                let showsLaneBrandIcons = lanePresentation == .codexGrokBot && laneBrandIcons != nil
+                let barWidthPx = lanePresentation == .codexGrokBot
+                    ? (showsLaneBrandIcons ? 24 : 32)
+                    : 30
+                let barXPx = showsLaneBrandIcons ? 12 : (Self.canvasPx - barWidthPx) / 2
+
+                func drawLaneBrandIcon(_ image: NSImage, rectPx: RectPx) {
+                    image.draw(
+                        in: rectPx.rect(),
+                        from: .zero,
+                        operation: .sourceOver,
+                        fraction: stale ? 0.55 : 1)
+                }
 
                 func drawBar(
                     rectPx: RectPx,
@@ -710,6 +728,10 @@ enum IconRenderer {
                 if lanePresentation == .codexGrokBot {
                     // These lanes have fixed identities. Keep both tracks in place even while one provider is
                     // unavailable or reports exactly 0%, rather than promoting a lane or substituting credits.
+                    if let laneBrandIcons {
+                        drawLaneBrandIcon(laneBrandIcons.top, rectPx: RectPx(x: 0, y: 20, w: 10, h: 10))
+                        drawLaneBrandIcon(laneBrandIcons.bottom, rectPx: RectPx(x: 0, y: 6, w: 10, h: 10))
+                    }
                     drawBar(rectPx: topRectPx, remaining: topValue)
                     drawBar(rectPx: bottomRectPx, remaining: bottomValue)
                 } else if let bottomValue, bottomValue > 0, topValue == nil,
@@ -837,6 +859,7 @@ enum IconRenderer {
                 indicator: self.indicatorKey(statusIndicator),
                 hideCritters: hideCritters,
                 lanePresentation: lanePresentation,
+                showsLaneBrandIcons: laneBrandIcons != nil,
                 quotaLayoutPolicy: quotaLayoutPolicy)
             if let cached = self.cachedIcon(for: key) {
                 return cached
