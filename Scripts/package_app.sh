@@ -247,7 +247,17 @@ fi
 # bundle ID carry them; adhoc/debug builds run with sync unavailable.
 PROVISIONING_PROFILE_SOURCE="$ROOT/Scripts/profiles/CodexBar-DeveloperID.provisionprofile"
 EMBED_PROVISIONING_PROFILE=0
+APP_GROUP_ENTITLEMENT_KEYS=""
 ICLOUD_ENTITLEMENT_KEYS=""
+if [[ "$SIGNING_MODE" == "identity" ]]; then
+  APP_GROUP_ENTITLEMENT_KEYS=$(cat <<APP_GROUP
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>${APP_GROUP_ID}</string>
+    </array>
+APP_GROUP
+)
+fi
 if [[ "$SIGNING_MODE" == "identity" && "$LOWER_CONF" == "release" && "$BUNDLE_ID" == "com.steipete.codexbar" ]]; then
   if [[ ! -f "$PROVISIONING_PROFILE_SOURCE" ]]; then
     echo "ERROR: Missing $PROVISIONING_PROFILE_SOURCE (required for iCloud entitlements in release builds)" >&2
@@ -277,10 +287,7 @@ cat > "$APP_ENTITLEMENTS" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>${APP_GROUP_ID}</string>
-    </array>
+${APP_GROUP_ENTITLEMENT_KEYS}
 ${ICLOUD_ENTITLEMENT_KEYS}
     $(if [[ "$ALLOW_LLDB" == "1" ]]; then echo "    <key>com.apple.security.get-task-allow</key><true/>"; fi)
 </dict>
@@ -293,10 +300,7 @@ cat > "$WIDGET_ENTITLEMENTS" <<PLIST
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>${APP_GROUP_ID}</string>
-    </array>
+${APP_GROUP_ENTITLEMENT_KEYS}
 </dict>
 </plist>
 PLIST
