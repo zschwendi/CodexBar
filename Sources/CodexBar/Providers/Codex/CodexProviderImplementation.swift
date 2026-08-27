@@ -121,6 +121,17 @@ struct CodexProviderImplementation: ProviderImplementation {
                 onAppDidBecomeActive: nil,
                 onAppearWhenEnabled: nil),
             ProviderSettingsToggleDescriptor(
+                id: "codex-reset-credits-visible",
+                title: "Show limit reset credits",
+                subtitle: "Shows available Codex limit reset credits in the menu and provider preview.",
+                binding: context.boolBinding(\.codexResetCreditsVisible),
+                statusText: nil,
+                actions: [],
+                isVisible: nil,
+                onChange: nil,
+                onAppDidBecomeActive: nil,
+                onAppearWhenEnabled: nil),
+            ProviderSettingsToggleDescriptor(
                 id: "codex-openai-web-extras",
                 title: "OpenAI web extras",
                 subtitle: [

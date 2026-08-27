@@ -1263,6 +1263,7 @@ extension UsageMenuCardView.Model {
         var metrics: [Metric] = []
         let percentStyle: PercentStyle = input.usageBarsShowUsed ? .used : .left
         let labels = Self.rateWindowLabels(input: input, snapshot: snapshot)
+        let showsCoreRateWindows = input.provider != .cursor || input.cursorQuotaUsageVisible
         if input.provider == .mistral, let credits = snapshot.mistralUsage?.credits {
             metrics.append(Metric(
                 id: "mistral-balance",
@@ -1282,7 +1283,7 @@ extension UsageMenuCardView.Model {
                 input: input,
                 projection: codexProjection,
                 percentStyle: percentStyle))
-        } else if let primary = snapshot.primary {
+        } else if showsCoreRateWindows, let primary = snapshot.primary {
             metrics.append(Self.primaryMetric(
                 input: input,
                 primary: primary,
@@ -1293,14 +1294,14 @@ extension UsageMenuCardView.Model {
                 percentStyle: percentStyle,
                 title: labels.primary))
         }
-        if input.provider != .codex, let weekly = snapshot.secondary {
+        if input.provider != .codex, showsCoreRateWindows, let weekly = snapshot.secondary {
             metrics.append(Self.secondaryMetric(
                 input: input,
                 weekly: weekly,
                 percentStyle: percentStyle,
                 title: labels.secondary))
         }
-        if labels.showsTertiary, let opus = snapshot.tertiary {
+        if showsCoreRateWindows, labels.showsTertiary, let opus = snapshot.tertiary {
             var tertiaryDetailText: String?
             if input.provider == .alibaba || input.provider == .alibabatokenplan,
                let detail = opus.resetDescription,

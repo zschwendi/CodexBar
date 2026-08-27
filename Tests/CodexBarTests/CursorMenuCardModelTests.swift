@@ -284,5 +284,29 @@ struct CursorMenuCardModelTests {
 
         #expect(model.metrics.map(\.title) == ["Total", "Cursor", "Third Party", "Grok Bot"])
         #expect(model.metrics.last?.percentLabel == "0% left")
+
+        let grokOnlyModel = UsageMenuCardView.Model.make(.init(
+            provider: .cursor,
+            metadata: metadata,
+            snapshot: snapshot,
+            credits: nil,
+            creditsError: nil,
+            dashboard: nil,
+            dashboardError: nil,
+            tokenSnapshot: nil,
+            tokenError: nil,
+            account: AccountInfo(email: nil, plan: nil),
+            isRefreshing: false,
+            lastError: nil,
+            usageBarsShowUsed: false,
+            resetTimeDisplayStyle: .countdown,
+            tokenCostUsageEnabled: false,
+            showOptionalCreditsAndExtraUsage: true,
+            cursorQuotaUsageVisible: false,
+            hidePersonalInfo: false,
+            now: now))
+
+        #expect(grokOnlyModel.metrics.map(\.title) == ["Grok Bot"])
+        #expect(grokOnlyModel.metrics.first?.id == CursorSandUsageStatus.extraWindowID)
     }
 }

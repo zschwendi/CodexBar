@@ -68,6 +68,8 @@ struct SettingsDefaultsState {
     var claudeDailyRoutinesUsageVisible: Bool
     var claudeModelScopedWeeklyUsageVisible: Bool
     var codexSparkUsageVisible: Bool
+    var codexResetCreditsVisible: Bool
+    var cursorQuotaUsageVisible: Bool
     var codexExternalOAuthSourcesAllowed: Bool
     var openAIWebAccessEnabled: Bool
     var openAIWebBatterySaverEnabled: Bool

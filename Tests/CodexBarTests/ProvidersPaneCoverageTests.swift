@@ -271,6 +271,38 @@ struct ProvidersPaneCoverageTests {
     }
 
     @Test
+    func `cursor provider preview can show grok bot without cursor quotas`() {
+        let settings = Self.makeSettingsStore(suite: "ProvidersPaneCoverageTests-cursor-quota-preview")
+        let store = Self.makeUsageStore(settings: settings)
+        let now = Date()
+        store._setSnapshotForTesting(
+            UsageSnapshot(
+                primary: RateWindow(usedPercent: 10, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                secondary: RateWindow(usedPercent: 20, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                tertiary: RateWindow(usedPercent: 30, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                extraRateWindows: [
+                    NamedRateWindow(
+                        id: CursorSandUsageStatus.extraWindowID,
+                        title: CursorSandUsageStatus.extraWindowTitle,
+                        window: RateWindow(
+                            usedPercent: 40,
+                            windowMinutes: 10080,
+                            resetsAt: now.addingTimeInterval(3600),
+                            resetDescription: nil)),
+                ],
+                updatedAt: now),
+            provider: .cursor)
+        let pane = ProvidersPane(settings: settings, store: store)
+
+        #expect(pane._test_menuCardModel(for: .cursor).metrics.map(\.title) == [
+            "Total", "Cursor", "Third Party", "Grok Bot",
+        ])
+
+        settings.cursorQuotaUsageVisible = false
+        #expect(pane._test_menuCardModel(for: .cursor).metrics.map(\.title) == ["Grok Bot"])
+    }
+
+    @Test
     func `provider detail plan row formats open router as balance`() {
         Self.withEnglishLocalization {
             let row = ProviderDetailView<EmptyView>.planRow(provider: .openrouter, planText: "Balance: $4.61")

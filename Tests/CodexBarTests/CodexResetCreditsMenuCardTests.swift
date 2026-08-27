@@ -78,6 +78,19 @@ struct CodexResetCreditsMenuCardTests {
     }
 
     @Test
+    func `reset credits visibility preference hides reset inventory`() throws {
+        let now = Date(timeIntervalSince1970: 1_781_726_400)
+        let model = try Self.model(
+            snapshot: Self.snapshot(
+                now: now,
+                credits: [Self.credit(id: "finite", status: .available, now: now, expiresIn: 86400)]),
+            showResetCredits: false,
+            now: now)
+
+        #expect(model.codexResetCredits == nil)
+    }
+
+    @Test
     func `compact expiry summary caps visible dates`() throws {
         let now = Date(timeIntervalSince1970: 1_781_726_400)
         let credits = (1...6).map { day in
@@ -275,6 +288,7 @@ struct CodexResetCreditsMenuCardTests {
         email: String? = nil,
         accountID: String? = nil,
         showOptionalUsage: Bool = true,
+        showResetCredits: Bool = true,
         resetStyle: ResetTimeDisplayStyle = .countdown,
         hidePersonalInfo: Bool = false,
         now: Date) throws -> UsageMenuCardView.Model
@@ -318,6 +332,7 @@ struct CodexResetCreditsMenuCardTests {
             resetTimeDisplayStyle: resetStyle,
             tokenCostUsageEnabled: false,
             showOptionalCreditsAndExtraUsage: showOptionalUsage,
+            codexResetCreditsVisible: showResetCredits,
             hidePersonalInfo: hidePersonalInfo,
             now: now))
     }

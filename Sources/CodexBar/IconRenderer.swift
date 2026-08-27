@@ -163,9 +163,9 @@ enum IconRenderer {
                 let trackStrokeAlpha: CGFloat = stale ? 0.28 : 0.44
                 let fillColor = baseFill.withAlphaComponent(stale ? 0.55 : 1.0)
 
-                // The custom Codex/Grok Bot stack reserves a narrow leading column for lane badges.
-                let barWidthPx = lanePresentation == .codexGrokBot ? 26 : 30
-                let barXPx = lanePresentation == .codexGrokBot ? 9 : (Self.canvasPx - barWidthPx) / 2
+                // The custom Codex/Grok Bot stack uses two equal, centered pill tracks.
+                let barWidthPx = lanePresentation == .codexGrokBot ? 32 : 30
+                let barXPx = (Self.canvasPx - barWidthPx) / 2
 
                 func drawBar(
                     rectPx: RectPx,
@@ -684,8 +684,12 @@ enum IconRenderer {
                 let hasWeekly = (bottomValue != nil)
                 let weeklyAvailable = hasWeekly && (bottomValue ?? 0) > 0
                 let creditsAlpha: CGFloat = 1.0
-                let topRectPx = RectPx(x: barXPx, y: 19, w: barWidthPx, h: 12)
-                let bottomRectPx = RectPx(x: barXPx, y: 5, w: barWidthPx, h: 8)
+                let topRectPx = lanePresentation == .codexGrokBot
+                    ? RectPx(x: barXPx, y: 20, w: barWidthPx, h: 10)
+                    : RectPx(x: barXPx, y: 19, w: barWidthPx, h: 12)
+                let bottomRectPx = lanePresentation == .codexGrokBot
+                    ? RectPx(x: barXPx, y: 6, w: barWidthPx, h: 10)
+                    : RectPx(x: barXPx, y: 5, w: barWidthPx, h: 8)
                 let creditsRectPx = RectPx(x: barXPx, y: 14, w: barWidthPx, h: 16)
                 let creditsBottomRectPx = RectPx(x: barXPx, y: 4, w: barWidthPx, h: 6)
 
@@ -708,7 +712,6 @@ enum IconRenderer {
                     // unavailable or reports exactly 0%, rather than promoting a lane or substituting credits.
                     drawBar(rectPx: topRectPx, remaining: topValue)
                     drawBar(rectPx: bottomRectPx, remaining: bottomValue)
-                    Self.drawCodexGrokBotLaneBadges(color: fillColor)
                 } else if let bottomValue, bottomValue > 0, topValue == nil,
                           !quotaLayoutPolicy.reservesMissingSecondaryLane,
                           !usesMissingSecondaryLayout
@@ -847,32 +850,6 @@ enum IconRenderer {
     }
 
     // swiftlint:enable function_body_length
-
-    /// Tiny monochrome lane identities for the custom two-provider stack. The upper ring echoes the
-    /// Codex knot at menu-bar scale; the lower robot head identifies Grok Bot without widening the status item.
-    private static func drawCodexGrokBotLaneBadges(color: NSColor) {
-        let context = NSGraphicsContext.current?.cgContext
-        context?.saveGState()
-        context?.setShouldAntialias(false)
-
-        color.setStroke()
-        let codexRing = NSBezierPath(ovalIn: Self.grid.rect(x: 1, y: 22, w: 7, h: 7))
-        codexRing.lineWidth = Self.grid.pt(2)
-        codexRing.stroke()
-
-        color.setFill()
-        let botHead = NSBezierPath(
-            roundedRect: Self.grid.rect(x: 1, y: 5, w: 7, h: 6),
-            xRadius: Self.grid.pt(1),
-            yRadius: Self.grid.pt(1))
-        botHead.fill()
-        NSBezierPath(rect: Self.grid.rect(x: 4, y: 11, w: 1, h: 2)).fill()
-        NSBezierPath(rect: Self.grid.rect(x: 3, y: 13, w: 3, h: 1)).fill()
-
-        context?.clear(Self.grid.rect(x: 3, y: 7, w: 1, h: 1))
-        context?.clear(Self.grid.rect(x: 6, y: 7, w: 1, h: 1))
-        context?.restoreGState()
-    }
 
     /// Morph helper: unbraids a simplified knot into our bar icon.
     static func makeMorphIcon(progress: Double, style: IconStyle, hideCritters: Bool = false) -> NSImage {

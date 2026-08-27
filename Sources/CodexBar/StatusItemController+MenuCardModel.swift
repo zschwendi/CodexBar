@@ -147,6 +147,8 @@ extension StatusItemController {
             showOptionalCreditsAndExtraUsage: self.settings.showOptionalCreditsAndExtraUsage,
             claudeDailyRoutinesUsageVisible: self.settings.claudeDailyRoutinesUsageVisible,
             codexSparkUsageVisible: self.settings.codexSparkUsageVisible,
+            codexResetCreditsVisible: self.settings.codexResetCreditsVisible,
+            cursorQuotaUsageVisible: self.settings.cursorQuotaUsageVisible,
             copilotBudgetExtrasEnabled: self.settings.copilotBudgetExtrasEnabled,
             sourceLabel: sourceLabel,
             subtitleOverride: subtitleOverride,

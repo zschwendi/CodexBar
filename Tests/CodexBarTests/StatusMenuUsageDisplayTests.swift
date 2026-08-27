@@ -137,4 +137,45 @@ extension StatusMenuTests {
         #expect(!hiddenModel.metrics.contains { $0.id == CodexAdditionalRateLimitMapper.sparkWindowID })
         #expect(hiddenModel.metrics.contains { $0.id == "codex-other-limit" })
     }
+
+    @Test
+    func `status menu card can show grok bot without cursor quotas`() {
+        let settings = self.makeSettings()
+        settings.statusChecksEnabled = false
+        settings.refreshFrequency = .manual
+        let store = self.makeCodexStore(settings: settings, dashboardAuthorized: false)
+        let now = Date()
+        store._setSnapshotForTesting(
+            UsageSnapshot(
+                primary: RateWindow(usedPercent: 10, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                secondary: RateWindow(usedPercent: 20, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                tertiary: RateWindow(usedPercent: 30, windowMinutes: 43200, resetsAt: nil, resetDescription: nil),
+                extraRateWindows: [
+                    NamedRateWindow(
+                        id: CursorSandUsageStatus.extraWindowID,
+                        title: CursorSandUsageStatus.extraWindowTitle,
+                        window: RateWindow(
+                            usedPercent: 40,
+                            windowMinutes: 10080,
+                            resetsAt: now.addingTimeInterval(3600),
+                            resetDescription: nil)),
+                ],
+                updatedAt: now),
+            provider: .cursor)
+        let controller = StatusItemController(
+            store: store,
+            settings: settings,
+            account: UsageFetcher().loadAccountInfo(),
+            updater: DisabledUpdaterController(),
+            preferencesSelection: PreferencesSelection(),
+            statusBar: self.makeStatusBarForTesting())
+        defer { controller.releaseStatusItemsForTesting() }
+
+        #expect(controller.menuCardModel(for: .cursor)?.metrics.map(\.title) == [
+            "Total", "Cursor", "Third Party", "Grok Bot",
+        ])
+
+        settings.cursorQuotaUsageVisible = false
+        #expect(controller.menuCardModel(for: .cursor)?.metrics.map(\.title) == ["Grok Bot"])
+    }
 }

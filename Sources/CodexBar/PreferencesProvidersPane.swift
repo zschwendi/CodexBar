@@ -598,6 +598,8 @@ struct ProvidersPane: View {
             showOptionalCreditsAndExtraUsage: self.settings.showOptionalCreditsAndExtraUsage,
             claudeDailyRoutinesUsageVisible: self.settings.claudeDailyRoutinesUsageVisible,
             codexSparkUsageVisible: self.settings.codexSparkUsageVisible,
+            codexResetCreditsVisible: self.settings.codexResetCreditsVisible,
+            cursorQuotaUsageVisible: self.settings.cursorQuotaUsageVisible,
             copilotBudgetExtrasEnabled: self.settings.copilotBudgetExtrasEnabled,
             showsAllUsageLanes: true,
             hidePersonalInfo: self.settings.hidePersonalInfo,

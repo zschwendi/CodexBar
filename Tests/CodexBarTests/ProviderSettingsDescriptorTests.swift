@@ -368,6 +368,37 @@ struct ProviderSettingsDescriptorTests {
     }
 
     @Test
+    func `codex reset credits visibility toggle is default on`() throws {
+        let fixture = try self.makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-codex-reset-credits")
+        let context = fixture.settingsContext(provider: .codex)
+
+        let toggle = try #require(CodexProviderImplementation().settingsToggles(context: context).first {
+            $0.id == "codex-reset-credits-visible"
+        })
+        #expect(toggle.title == "Show limit reset credits")
+        #expect(toggle.binding.wrappedValue)
+
+        toggle.binding.wrappedValue = false
+        #expect(fixture.settings.codexResetCreditsVisible == false)
+    }
+
+    @Test
+    func `cursor quota toggle leaves grok bot usage visible`() throws {
+        let fixture = try self.makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-cursor-quota-toggle")
+        let context = fixture.settingsContext(provider: .cursor)
+
+        let toggle = try #require(CursorProviderImplementation().settingsToggles(context: context).first {
+            $0.id == "cursor-quota-usage-visible"
+        })
+        #expect(toggle.title == "Show Cursor quota usage")
+        #expect(toggle.subtitle.contains("Grok Bot stays visible"))
+        #expect(toggle.binding.wrappedValue)
+
+        toggle.binding.wrappedValue = false
+        #expect(fixture.settings.cursorQuotaUsageVisible == false)
+    }
+
+    @Test
     func `claude exposes usage and cookie pickers`() throws {
         let fixture = try self.makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-claude")
         fixture.settings.debugDisableKeychainAccess = false

@@ -835,6 +835,22 @@ extension SettingsStore {
         }
     }
 
+    var codexResetCreditsVisible: Bool {
+        get { self.defaultsState.codexResetCreditsVisible }
+        set {
+            self.defaultsState.codexResetCreditsVisible = newValue
+            self.userDefaults.set(newValue, forKey: "codexResetCreditsVisible")
+        }
+    }
+
+    var cursorQuotaUsageVisible: Bool {
+        get { self.defaultsState.cursorQuotaUsageVisible }
+        set {
+            self.defaultsState.cursorQuotaUsageVisible = newValue
+            self.userDefaults.set(newValue, forKey: "cursorQuotaUsageVisible")
+        }
+    }
+
     var codexExternalOAuthSourcesAllowed: Bool {
         get { self.defaultsState.codexExternalOAuthSourcesAllowed }
         set {

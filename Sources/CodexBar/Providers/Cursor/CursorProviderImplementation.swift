@@ -23,6 +23,23 @@ struct CursorProviderImplementation: ProviderImplementation {
     }
 
     @MainActor
+    func settingsToggles(context: ProviderSettingsContext) -> [ProviderSettingsToggleDescriptor] {
+        [
+            ProviderSettingsToggleDescriptor(
+                id: "cursor-quota-usage-visible",
+                title: "Show Cursor quota usage",
+                subtitle: "Shows Cursor's Total, Cursor, and Third Party quota rows. Grok Bot stays visible.",
+                binding: context.boolBinding(\.cursorQuotaUsageVisible),
+                statusText: nil,
+                actions: [],
+                isVisible: nil,
+                onChange: nil,
+                onAppDidBecomeActive: nil,
+                onAppearWhenEnabled: nil),
+        ]
+    }
+
+    @MainActor
     func tokenAccountsVisibility(context: ProviderSettingsContext, support: TokenAccountSupport) -> Bool {
         guard support.requiresManualCookieSource else { return true }
         if !context.settings.tokenAccounts(for: context.provider).isEmpty { return true }

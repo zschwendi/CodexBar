@@ -600,6 +600,16 @@ extension SettingsStore {
         if Self.isRunningTests, codexSparkUsageVisibleDefault == nil {
             userDefaults.set(true, forKey: "codexSparkUsageVisible")
         }
+        let codexResetCreditsVisibleDefault = userDefaults.object(forKey: "codexResetCreditsVisible") as? Bool
+        let codexResetCreditsVisible = codexResetCreditsVisibleDefault ?? true
+        if Self.isRunningTests, codexResetCreditsVisibleDefault == nil {
+            userDefaults.set(true, forKey: "codexResetCreditsVisible")
+        }
+        let cursorQuotaUsageVisibleDefault = userDefaults.object(forKey: "cursorQuotaUsageVisible") as? Bool
+        let cursorQuotaUsageVisible = cursorQuotaUsageVisibleDefault ?? true
+        if Self.isRunningTests, cursorQuotaUsageVisibleDefault == nil {
+            userDefaults.set(true, forKey: "cursorQuotaUsageVisible")
+        }
         let codexExternalOAuthSourcesAllowed = userDefaults.object(
             forKey: "codexExternalOAuthSourcesAllowed") as? Bool ?? false
         if Self.isRunningTests, userDefaults.object(forKey: "codexExternalOAuthSourcesAllowed") == nil {
@@ -714,6 +724,8 @@ extension SettingsStore {
             claudeDailyRoutinesUsageVisible: claudeDailyRoutinesUsageVisible,
             claudeModelScopedWeeklyUsageVisible: claudeModelScopedWeeklyUsageVisible,
             codexSparkUsageVisible: codexSparkUsageVisible,
+            codexResetCreditsVisible: codexResetCreditsVisible,
+            cursorQuotaUsageVisible: cursorQuotaUsageVisible,
             codexExternalOAuthSourcesAllowed: codexExternalOAuthSourcesAllowed,
             openAIWebAccessEnabled: openAIWebAccessEnabled,
             openAIWebBatterySaverEnabled: openAIWebBatterySaverEnabled,

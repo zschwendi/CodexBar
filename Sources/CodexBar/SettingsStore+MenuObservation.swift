@@ -67,6 +67,8 @@ extension SettingsStore {
         _ = self.claudeDailyRoutinesUsageVisible
         _ = self.claudeModelScopedWeeklyUsageVisible
         _ = self.codexSparkUsageVisible
+        _ = self.codexResetCreditsVisible
+        _ = self.cursorQuotaUsageVisible
         _ = self.openAIWebAccessEnabled
         _ = self.openAIWebBatterySaverEnabled
         _ = self.backgroundWorkLowPowerModePreference

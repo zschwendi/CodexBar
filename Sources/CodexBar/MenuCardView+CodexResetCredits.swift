@@ -120,6 +120,7 @@ struct CodexResetCreditsContent: View {
 extension UsageMenuCardView.Model {
     static func codexResetCredits(input: Input) -> CodexResetCreditsPresentation? {
         guard input.provider == .codex,
+              input.codexResetCreditsVisible,
               let resetCredits = input.snapshot?.codexResetCredits
         else {
             return nil
