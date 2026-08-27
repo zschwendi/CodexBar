@@ -431,14 +431,6 @@ extension StatusItemController {
                 self.noteIconPerfRender(skipped: true)
                 return true
             }
-            let laneBrandIcons: IconRenderer.LaneBrandIcons? = if providerStack != nil,
-                                                                  let codex = ProviderBrandIcon.image(for: .codex),
-                                                                  let grok = ProviderBrandIcon.image(for: .grok)
-            {
-                IconRenderer.LaneBrandIcons(top: codex, bottom: grok)
-            } else {
-                nil
-            }
             let image = IconRenderer.makeIcon(
                 primaryRemaining: primary,
                 weeklyRemaining: weekly,
@@ -451,7 +443,6 @@ extension StatusItemController {
                 statusIndicator: statusIndicator,
                 hideCritters: self.settings.menuBarHidesCritters,
                 lanePresentation: providerStack == nil ? .automatic : .codexGrokBot,
-                laneBrandIcons: laneBrandIcons,
                 quotaLayoutPolicy: .provider(primaryProvider))
             self.setButtonContent(
                 image: warningFlash ? Self.quotaWarningFlashImage(base: image) : image,
