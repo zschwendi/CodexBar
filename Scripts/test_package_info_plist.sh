@@ -20,6 +20,7 @@ PY
 APP="$TEMP_DIR/CodexBar.app"
 mkdir -p "$APP/Contents"
 BUNDLE_ID=com.steipete.codexbar.test
+APP_DISPLAY_NAME=Z-CodexBar-Test
 MARKETING_VERSION=0.0.0
 BUILD_NUMBER=0
 FEED_URL=https://example.invalid/appcast.xml
@@ -38,6 +39,9 @@ import sys
 from pathlib import Path
 
 plist = plistlib.loads(Path(sys.argv[1]).read_bytes())
+assert plist["CFBundleIdentifier"] == "com.steipete.codexbar.test"
+assert plist["CFBundleName"] == "Z-CodexBar-Test"
+assert plist["CFBundleDisplayName"] == "Z-CodexBar-Test"
 declarations = plist.get("UTExportedTypeDeclarations")
 assert declarations == [{
     "UTTypeIdentifier": "com.steipete.codexbar.menu-layout-item",

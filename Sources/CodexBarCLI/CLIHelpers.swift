@@ -170,6 +170,8 @@ extension CodexBarCLI {
 
     static func resetTimeDisplayStyleFromDefaults() -> ResetTimeDisplayStyle {
         let domains = [
+            "com.zephyrstudios.zcodexbar",
+            "com.zephyrstudios.zcodexbar.debug",
             "com.steipete.codexbar",
             "com.steipete.codexbar.debug",
         ]
@@ -184,6 +186,8 @@ extension CodexBarCLI {
 
     static func weeklyProgressWorkDaysFromDefaults() -> Int? {
         let domains = [
+            "com.zephyrstudios.zcodexbar",
+            "com.zephyrstudios.zcodexbar.debug",
             "com.steipete.codexbar",
             "com.steipete.codexbar.debug",
         ]
@@ -204,6 +208,8 @@ extension CodexBarCLI {
 
     static func boolFromAppDefaults(_ key: String) -> Bool? {
         let domains = [
+            "com.zephyrstudios.zcodexbar",
+            "com.zephyrstudios.zcodexbar.debug",
             "com.steipete.codexbar",
             "com.steipete.codexbar.debug",
         ]
@@ -217,6 +223,8 @@ extension CodexBarCLI {
 
     static func stringFromAppDefaults(_ key: String) -> String? {
         let domains = [
+            "com.zephyrstudios.zcodexbar",
+            "com.zephyrstudios.zcodexbar.debug",
             "com.steipete.codexbar",
             "com.steipete.codexbar.debug",
         ]

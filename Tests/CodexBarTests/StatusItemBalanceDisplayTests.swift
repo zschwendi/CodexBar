@@ -852,8 +852,8 @@ struct StatusItemBalanceDisplayTests {
         #expect(StatusItemController.isDebugApp(bundleIdentifier: "com.steipete.codexbar.debug"))
         #expect(!StatusItemController.isDebugApp(bundleIdentifier: "com.steipete.codexbar"))
         #expect(!StatusItemController.isDebugApp(bundleIdentifier: nil))
-        #expect(StatusItemController.statusItemAccessibilityTitle(isDebugApp: true) == "CodexBar Debug")
-        #expect(StatusItemController.statusItemAccessibilityTitle(isDebugApp: false) == "CodexBar")
+        #expect(StatusItemController.statusItemAccessibilityTitle(isDebugApp: true) == "Z-CodexBar Debug")
+        #expect(StatusItemController.statusItemAccessibilityTitle(isDebugApp: false) == "Z-CodexBar")
     }
 
     private func makeSettings(suiteName: String, provider: UsageProvider) -> SettingsStore {

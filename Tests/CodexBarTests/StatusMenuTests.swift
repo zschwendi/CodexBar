@@ -929,8 +929,8 @@ extension StatusMenuTests {
             statusBar: self.makeStatusBarForTesting())
 
         let codexItem = try #require(controller.statusItems[.codex])
-        #expect(controller.statusItem.autosaveName == "codexbar-merged")
-        #expect(codexItem.autosaveName == "codexbar-codex")
+        #expect(controller.statusItem.autosaveName == "z-codexbar-merged")
+        #expect(codexItem.autosaveName == "z-codexbar-codex")
 
         try settings.setProviderEnabled(
             provider: .gemini,
@@ -939,8 +939,8 @@ extension StatusMenuTests {
         controller.handleProviderConfigChange(reason: "test")
 
         #expect(controller.statusItems[.codex] === codexItem)
-        #expect(controller.statusItems[.codex]?.autosaveName == "codexbar-codex")
-        #expect(controller.statusItems[.gemini]?.autosaveName == "codexbar-gemini")
+        #expect(controller.statusItems[.codex]?.autosaveName == "z-codexbar-codex")
+        #expect(controller.statusItems[.gemini]?.autosaveName == "z-codexbar-gemini")
     }
 
     @Test

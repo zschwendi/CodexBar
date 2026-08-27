@@ -108,14 +108,14 @@ struct StatusItemControllerSplitLifecycleTests {
 
         #expect(controller.statusItems[.codex] != nil)
         #expect(controller.statusItems[.claude] != nil)
-        #expect(controller.expectedVisibleStatusItemAutosaveNames == ["codexbar-codex", "codexbar-claude"])
+        #expect(controller.expectedVisibleStatusItemAutosaveNames == ["z-codexbar-codex", "z-codexbar-claude"])
 
         settings.mergeIcons = true
         controller.handleProviderConfigChange(reason: "test")
 
         #expect(controller.statusItem.isVisible == true)
         #expect(controller.statusItems.isEmpty)
-        #expect(controller.expectedVisibleStatusItemAutosaveNames == ["codexbar-merged"])
+        #expect(controller.expectedVisibleStatusItemAutosaveNames == ["z-codexbar-merged"])
     }
 
     @Test
@@ -200,15 +200,15 @@ struct StatusItemControllerSplitLifecycleTests {
         let codexButton = try #require(controller.statusItems[.codex]?.button)
         let claudeButton = try #require(controller.statusItems[.claude]?.button)
 
-        #expect(controller.statusItem.autosaveName == "codexbar-merged")
-        #expect(controller.statusItems[.codex]?.autosaveName == "codexbar-codex")
-        #expect(controller.statusItems[.claude]?.autosaveName == "codexbar-claude")
-        #expect(controller.statusItem.button?.accessibilityIdentifier() == "CodexBar.StatusItem")
-        #expect(codexButton.accessibilityIdentifier() == "CodexBar.StatusItem.codex")
-        #expect(claudeButton.accessibilityIdentifier() == "CodexBar.StatusItem.claude")
-        #expect(controller.statusItem.button?.accessibilityTitle() == "CodexBar")
-        #expect(codexButton.accessibilityTitle() == "CodexBar")
-        #expect(claudeButton.accessibilityTitle() == "CodexBar")
+        #expect(controller.statusItem.autosaveName == "z-codexbar-merged")
+        #expect(controller.statusItems[.codex]?.autosaveName == "z-codexbar-codex")
+        #expect(controller.statusItems[.claude]?.autosaveName == "z-codexbar-claude")
+        #expect(controller.statusItem.button?.accessibilityIdentifier() == "Z-CodexBar.StatusItem")
+        #expect(codexButton.accessibilityIdentifier() == "Z-CodexBar.StatusItem.codex")
+        #expect(claudeButton.accessibilityIdentifier() == "Z-CodexBar.StatusItem.claude")
+        #expect(controller.statusItem.button?.accessibilityTitle() == "Z-CodexBar")
+        #expect(codexButton.accessibilityTitle() == "Z-CodexBar")
+        #expect(claudeButton.accessibilityTitle() == "Z-CodexBar")
         #expect(controller.statusItem.button?.toolTip == nil)
         #expect(codexButton.toolTip == nil)
         #expect(claudeButton.toolTip == nil)
@@ -216,9 +216,9 @@ struct StatusItemControllerSplitLifecycleTests {
 
     @Test
     func `status item identity returns stable autosave names`() {
-        #expect(StatusItemController.StatusItemIdentity.merged.autosaveName == "codexbar-merged")
-        #expect(StatusItemController.StatusItemIdentity.provider(.codex).autosaveName == "codexbar-codex")
-        #expect(StatusItemController.StatusItemIdentity.provider(.claude).autosaveName == "codexbar-claude")
+        #expect(StatusItemController.StatusItemIdentity.merged.autosaveName == "z-codexbar-merged")
+        #expect(StatusItemController.StatusItemIdentity.provider(.codex).autosaveName == "z-codexbar-codex")
+        #expect(StatusItemController.StatusItemIdentity.provider(.claude).autosaveName == "z-codexbar-claude")
     }
 
     @Test
@@ -433,6 +433,7 @@ struct StatusItemControllerSplitLifecycleTests {
         defaults.removePersistentDomain(forName: suite)
         defaults.set(false, forKey: "NSStatusItem VisibleCC Item-0")
         defaults.set(0, forKey: "NSStatusItem VisibleCC Item-12")
+        defaults.set(false, forKey: "NSStatusItem VisibleCC z-codexbar-merged")
         defaults.set(false, forKey: "NSStatusItem VisibleCC codexbar-merged")
         defaults.set(true, forKey: "NSStatusItem VisibleCC Item-1")
         defaults.set(false, forKey: "NSStatusItem VisibleCC com.apple.clock")
@@ -446,10 +447,12 @@ struct StatusItemControllerSplitLifecycleTests {
             "NSStatusItem VisibleCC Item-0",
             "NSStatusItem VisibleCC Item-12",
             "NSStatusItem VisibleCC codexbar-merged",
+            "NSStatusItem VisibleCC z-codexbar-merged",
         ])
         #expect(defaults.object(forKey: "NSStatusItem VisibleCC Item-0") == nil)
         #expect(defaults.object(forKey: "NSStatusItem VisibleCC Item-12") == nil)
         #expect(defaults.object(forKey: "NSStatusItem VisibleCC codexbar-merged") == nil)
+        #expect(defaults.object(forKey: "NSStatusItem VisibleCC z-codexbar-merged") == nil)
         #expect(defaults.bool(forKey: "NSStatusItem VisibleCC Item-1"))
         #expect(defaults.object(forKey: "NSStatusItem VisibleCC com.apple.clock") != nil)
 
@@ -494,8 +497,8 @@ struct StatusItemControllerSplitLifecycleTests {
         #expect(newCodexItem === oldCodexItem)
         #expect(newClaudeItem === oldClaudeItem)
         #expect(newCodexItem.button === oldCodexButton)
-        #expect(newCodexItem.autosaveName == "codexbar-codex")
-        #expect(newCodexItem.button?.accessibilityIdentifier() == "CodexBar.StatusItem.codex")
+        #expect(newCodexItem.autosaveName == "z-codexbar-codex")
+        #expect(newCodexItem.button?.accessibilityIdentifier() == "Z-CodexBar.StatusItem.codex")
     }
 
     @Test
@@ -512,8 +515,8 @@ struct StatusItemControllerSplitLifecycleTests {
 
         #expect(controller.statusItem === oldMergedItem)
         #expect(controller.statusItem.button === oldMergedButton)
-        #expect(controller.statusItem.autosaveName == "codexbar-merged")
-        #expect(controller.statusItem.button?.accessibilityIdentifier() == "CodexBar.StatusItem")
+        #expect(controller.statusItem.autosaveName == "z-codexbar-merged")
+        #expect(controller.statusItem.button?.accessibilityIdentifier() == "Z-CodexBar.StatusItem")
     }
 
     @Test
@@ -544,8 +547,8 @@ struct StatusItemControllerSplitLifecycleTests {
 
         let newCodexItem = try #require(controller.statusItems[.codex])
         #expect(newCodexItem !== oldCodexItem)
-        #expect(newCodexItem.autosaveName == "codexbar-codex")
-        #expect(newCodexItem.button?.accessibilityIdentifier() == "CodexBar.StatusItem.codex")
+        #expect(newCodexItem.autosaveName == "z-codexbar-codex")
+        #expect(newCodexItem.button?.accessibilityIdentifier() == "Z-CodexBar.StatusItem.codex")
     }
 
     @Test
@@ -562,7 +565,7 @@ struct StatusItemControllerSplitLifecycleTests {
 
         let mergedButton = try #require(controller.statusItem.button)
         #expect(mergedButton.image != nil)
-        #expect(controller.statusItem.autosaveName == "codexbar-merged")
-        #expect(mergedButton.accessibilityIdentifier() == "CodexBar.StatusItem")
+        #expect(controller.statusItem.autosaveName == "z-codexbar-merged")
+        #expect(mergedButton.accessibilityIdentifier() == "Z-CodexBar.StatusItem")
     }
 }

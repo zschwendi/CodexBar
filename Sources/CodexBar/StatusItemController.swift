@@ -45,9 +45,9 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     private static let defaultMenuRefreshEnabled = !SettingsStore.isRunningTests
     private(set) static var menuRefreshEnabled = !SettingsStore.isRunningTests
     static let quotaWarningFlashDuration: TimeInterval = 60
-    private nonisolated static let statusItemAccessibilityTitle = "CodexBar"
-    private nonisolated static let debugStatusItemAccessibilityTitle = "CodexBar Debug"
-    private nonisolated static let statusItemAccessibilityIdentifierPrefix = "CodexBar.StatusItem"
+    private nonisolated static let statusItemAccessibilityTitle = "Z-CodexBar"
+    private nonisolated static let debugStatusItemAccessibilityTitle = "Z-CodexBar Debug"
+    private nonisolated static let statusItemAccessibilityIdentifierPrefix = "Z-CodexBar.StatusItem"
     private nonisolated static let mergedLegacyDefaultItemIndex = 0
 
     enum StatusItemIdentity {
@@ -57,9 +57,9 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
         var autosaveName: String {
             switch self {
             case .merged:
-                "codexbar-merged"
+                "z-codexbar-merged"
             case let .provider(provider):
-                "codexbar-\(provider.rawValue)"
+                "z-codexbar-\(provider.rawValue)"
             }
         }
 
