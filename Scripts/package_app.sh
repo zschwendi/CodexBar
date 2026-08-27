@@ -217,7 +217,7 @@ if [[ -f "$ICON_SOURCE" ]]; then
 fi
 
 APP_DISPLAY_NAME="${CODEXBAR_DISPLAY_NAME:-Z-CodexBar}"
-BUNDLE_ID="${CODEXBAR_BUNDLE_ID:-com.zephyrstudios.zcodexbar}"
+BUNDLE_ID="${CODEXBAR_BUNDLE_ID:-com.zephyrstudios.zcodexbar.menubar}"
 FEED_URL="https://raw.githubusercontent.com/steipete/CodexBar/main/appcast.xml"
 AUTO_CHECKS=true
 if [[ "$LOWER_CONF" == "debug" ]]; then

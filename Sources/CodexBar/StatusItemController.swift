@@ -54,15 +54,6 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
         case merged
         case provider(ProviderInstanceID)
 
-        var autosaveName: String {
-            switch self {
-            case .merged:
-                "z-codexbar-merged"
-            case let .provider(provider):
-                "z-codexbar-\(provider.rawValue)"
-            }
-        }
-
         var accessibilityIdentifier: String {
             switch self {
             case .merged:
@@ -941,6 +932,24 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
         self.screenChangeVisibilityTask?.cancel()
         self.pendingScreenChangePreviousCount = nil
         NotificationCenter.default.removeObserver(self)
+    }
+}
+
+extension StatusItemController.StatusItemIdentity {
+    var autosaveName: String {
+        self.autosaveName(isRunningTests: SettingsStore.isRunningTests)
+    }
+
+    func autosaveName(isRunningTests: Bool) -> String {
+        // AppKit persists NSStatusItem visibility against the helper process that first registers an
+        // autosave name. Keep SwiftPM/AppKit tests from claiming the installed app's production identities.
+        let prefix = isRunningTests ? "z-codexbar-tests-" : "z-codexbar-app-"
+        switch self {
+        case .merged:
+            return prefix + "merged"
+        case let .provider(provider):
+            return prefix + provider.rawValue
+        }
     }
 }
 
