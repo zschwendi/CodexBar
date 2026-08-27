@@ -35,6 +35,8 @@ struct StatusItemCodexGrokBotStackTests {
         #expect(renderSignature.contains("primary=40.000"))
         #expect(renderSignature.contains("weekly=5.000"))
         #expect(renderSignature.contains("lanes=codex-grok-bot"))
+        #expect(renderSignature.contains("laneColors=#49A3B0,#00BFA5"))
+        #expect(controller.statusItem.button?.image?.isTemplate == false)
         #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Grok Bot 5% used") == true)
 
         store._setSnapshotForTesting(Self.cursorSnapshot(grokBotUsed: 12), provider: .cursor)
@@ -56,6 +58,28 @@ struct StatusItemCodexGrokBotStackTests {
         #expect(renderSignature.contains("weekly=5.000"))
         #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Codex 60% remaining") == true)
         #expect(controller.statusItem.button?.accessibilityTitle()?.contains("Grok Bot 95% remaining") == true)
+    }
+
+    @Test
+    func `lane colors follow codex and grok bot dropdown accent overrides`() throws {
+        let (settings, _, controller) = self.makeController(
+            suiteName: "StatusItemCodexGrokBotStackTests-colors",
+            grokBotUsed: 5)
+        defer { controller.releaseStatusItemsForTesting() }
+
+        #expect(controller.codexGrokBotMenuBarLaneColors() == IconRenderer.LaneColors(
+            top: ProviderColor(hex: 0x49A3B0),
+            bottom: ProviderColor(hex: 0x00BFA5)))
+
+        settings.setAccentColorOverride(ProviderColor(hex: 0xA56CC1), for: .codex)
+        settings.setAccentColorOverride(ProviderColor(hex: 0xE8A64A), for: .cursor)
+        controller.applyIcon(phase: nil)
+
+        #expect(controller.codexGrokBotMenuBarLaneColors() == IconRenderer.LaneColors(
+            top: ProviderColor(hex: 0xA56CC1),
+            bottom: ProviderColor(hex: 0xE8A64A)))
+        let renderSignature = try #require(controller.lastAppliedMergedIconRenderSignature)
+        #expect(renderSignature.contains("laneColors=#A56CC1,#E8A64A"))
     }
 
     private func makeController(

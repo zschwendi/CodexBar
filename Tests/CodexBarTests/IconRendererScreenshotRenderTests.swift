@@ -81,6 +81,9 @@ final class IconRendererScreenshotRenderTests: XCTestCase {
             stale: false,
             style: .codex,
             lanePresentation: .codexGrokBot,
+            laneColors: IconRenderer.LaneColors(
+                top: ProviderDescriptorRegistry.descriptor(for: .codex).branding.color,
+                bottom: ProviderDescriptorRegistry.descriptor(for: .cursor).branding.color),
             quotaLayoutPolicy: .provider(.codex))
         let data = try XCTUnwrap(
             Self.proofPNG(

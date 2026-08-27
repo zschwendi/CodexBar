@@ -8,6 +8,11 @@ enum IconRenderer {
         case codexGrokBot
     }
 
+    struct LaneColors: Equatable {
+        let top: ProviderColor
+        let bottom: ProviderColor
+    }
+
     struct QuotaLayoutPolicy: Hashable {
         let reservesMissingSecondaryLane: Bool
         let treatsExhaustedSecondaryAsMissing: Bool
@@ -64,6 +69,8 @@ enum IconRenderer {
         let indicator: Int
         let hideCritters: Bool
         let lanePresentation: LanePresentation
+        let laneTopColor: Int
+        let laneBottomColor: Int
         let quotaLayoutPolicy: QuotaLayoutPolicy
     }
 
@@ -151,17 +158,17 @@ enum IconRenderer {
         statusIndicator: ProviderStatusIndicator = .none,
         hideCritters: Bool = false,
         lanePresentation: LanePresentation = .automatic,
+        laneColors: LaneColors? = nil,
         quotaLayoutPolicy: QuotaLayoutPolicy? = nil) -> NSImage
     {
         let quotaLayoutPolicy = quotaLayoutPolicy ?? .style(style)
         let shouldCache = blink <= 0.0001 && wiggle <= 0.0001 && tilt <= 0.0001
         let render = {
-            self.renderImage {
+            self.renderImage(isTemplate: laneColors == nil) {
                 // Keep monochrome template icons; Claude uses subtle shape cues only.
-                let baseFill = NSColor.labelColor
+                let defaultBaseFill = NSColor.labelColor
                 let trackFillAlpha: CGFloat = stale ? 0.18 : 0.28
                 let trackStrokeAlpha: CGFloat = stale ? 0.28 : 0.44
-                let fillColor = baseFill.withAlphaComponent(stale ? 0.55 : 1.0)
 
                 // The custom Codex/Grok Bot stack uses two equal, centered pill tracks.
                 let barWidthPx = lanePresentation == .codexGrokBot ? 32 : 30
@@ -179,8 +186,11 @@ enum IconRenderer {
                     addWarpTwist: Bool = false,
                     blink: CGFloat = 0,
                     drawTrackFill: Bool = true,
-                    warpEyesFilled: Bool = false)
+                    warpEyesFilled: Bool = false,
+                    tint: NSColor? = nil)
                 {
+                    let baseFill = tint ?? defaultBaseFill
+                    let fillColor = baseFill.withAlphaComponent(stale ? 0.55 : 1.0)
                     let rect = rectPx.rect()
                     // Claude reads better as a blockier critter; Codex stays as a capsule.
                     // Warp uses small corner radius for rounded rectangle (matching logo style)
@@ -710,8 +720,14 @@ enum IconRenderer {
                 if lanePresentation == .codexGrokBot {
                     // These lanes have fixed identities. Keep both tracks in place even while one provider is
                     // unavailable or reports exactly 0%, rather than promoting a lane or substituting credits.
-                    drawBar(rectPx: topRectPx, remaining: topValue)
-                    drawBar(rectPx: bottomRectPx, remaining: bottomValue)
+                    drawBar(
+                        rectPx: topRectPx,
+                        remaining: topValue,
+                        tint: laneColors.map { Self.nsColor($0.top) })
+                    drawBar(
+                        rectPx: bottomRectPx,
+                        remaining: bottomValue,
+                        tint: laneColors.map { Self.nsColor($0.bottom) })
                 } else if let bottomValue, bottomValue > 0, topValue == nil,
                           !quotaLayoutPolicy.reservesMissingSecondaryLane,
                           !usesMissingSecondaryLayout
@@ -837,6 +853,8 @@ enum IconRenderer {
                 indicator: self.indicatorKey(statusIndicator),
                 hideCritters: hideCritters,
                 lanePresentation: lanePresentation,
+                laneTopColor: self.colorKey(laneColors?.top),
+                laneBottomColor: self.colorKey(laneColors?.bottom),
                 quotaLayoutPolicy: quotaLayoutPolicy)
             if let cached = self.cachedIcon(for: key) {
                 return cached
@@ -874,6 +892,22 @@ enum IconRenderer {
         guard let value else { return -1 }
         let clamped = max(0, min(value, self.creditsCap))
         return Int((clamped * 10).rounded())
+    }
+
+    private static func colorKey(_ color: ProviderColor?) -> Int {
+        guard let color else { return -1 }
+        func channel(_ value: Double) -> Int {
+            Int((min(1, max(0, value)) * 255).rounded())
+        }
+        return (channel(color.red) << 16) | (channel(color.green) << 8) | channel(color.blue)
+    }
+
+    private static func nsColor(_ color: ProviderColor) -> NSColor {
+        NSColor(
+            srgbRed: CGFloat(color.red),
+            green: CGFloat(color.green),
+            blue: CGFloat(color.blue),
+            alpha: 1)
     }
 
     private static let styleKeyLookup: [IconStyle: Int] = {
@@ -1093,7 +1127,7 @@ enum IconRenderer {
         CGRect(x: self.snap(x), y: self.snap(y), width: self.snap(width), height: self.snap(height))
     }
 
-    private static func renderImage(_ draw: () -> Void) -> NSImage {
+    private static func renderImage(isTemplate: Bool = true, _ draw: () -> Void) -> NSImage {
         let image = NSImage(size: Self.outputSize)
 
         if let rep = NSBitmapImageRep(
@@ -1124,7 +1158,7 @@ enum IconRenderer {
             image.unlockFocus()
         }
 
-        image.isTemplate = true
+        image.isTemplate = isTemplate
         return image
     }
 }

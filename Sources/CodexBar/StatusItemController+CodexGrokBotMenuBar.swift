@@ -7,6 +7,13 @@ struct CodexGrokBotMenuBarStackValues: Equatable {
 }
 
 extension StatusItemController {
+    func codexGrokBotMenuBarLaneColors() -> IconRenderer.LaneColors {
+        // Provider-specific by design: Grok Bot is a Cursor-owned usage window and shares its dropdown accent.
+        IconRenderer.LaneColors(
+            top: self.settings.accentColor(for: .codex),
+            bottom: self.settings.accentColor(for: .cursor))
+    }
+
     func codexGrokBotMenuBarStackValues(showUsed: Bool) -> CodexGrokBotMenuBarStackValues? {
         guard self.shouldMergeIcons,
               !self.settings.menuBarShowsBrandIconWithPercent
@@ -41,6 +48,7 @@ extension StatusItemController {
         let namedWindow = self.store.menuBarSnapshot(for: .cursor)?.extraRateWindows?.first {
             $0.id == CursorSandUsageStatus.extraWindowID
         }
+        // Provider-specific by design: this signature invalidates the fixed Codex and Cursor menu bar pairing.
         return [
             "known=\(namedWindow?.usageKnown == true ? "1" : "0")",
             "used=\(Self.iconSignatureValue(namedWindow?.window.usedPercent))",

@@ -1,3 +1,4 @@
+import AppKit
 import CodexBarCore
 import SwiftUI
 
@@ -77,6 +78,16 @@ struct MenuBarPane: View {
                     .disabled(!self.settings.mergeIcons)
             } header: {
                 Text(L("section_combined_icon"))
+            }
+
+            if self.showsCodexGrokBotPillColors {
+                Section {
+                    // Provider-specific by design: these rows configure the fork's fixed Codex/Cursor-owned lanes.
+                    MenuBarPillColorRow(title: "Codex", provider: .codex, settings: self.settings)
+                    MenuBarPillColorRow(title: "Grok Bot", provider: .cursor, settings: self.settings)
+                } header: {
+                    Text("Menu bar pill colors")
+                }
             }
 
             Section {
@@ -180,6 +191,13 @@ struct MenuBarPane: View {
         self.settings.mergeIcons && !self.activeProvidersInOrder.isEmpty
     }
 
+    private var showsCodexGrokBotPillColors: Bool {
+        // Provider-specific by design: the stacked pill controls exist only for the fixed Codex and Cursor pairing.
+        self.settings.mergeIcons &&
+            self.activeProvidersInOrder.contains(.codex) &&
+            self.activeProvidersInOrder.contains(.cursor)
+    }
+
     private var overviewProviderSelectionSummary: String {
         let selectedNames = self.overviewSelectedProviders.map(self.providerDisplayName)
         guard !selectedNames.isEmpty else { return L("overview_no_providers_selected") }
@@ -202,5 +220,60 @@ struct MenuBarPane: View {
         _ = self.settings.reconcileMergedOverviewSelectedProviders(
             activeProviders: self.activeProvidersInOrder,
             maxVisibleProviders: Self.maxOverviewProviders)
+    }
+}
+
+@MainActor
+private struct MenuBarPillColorRow: View {
+    let title: String
+    let provider: UsageProvider
+    @Bindable var settings: SettingsStore
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(self.title)
+            Spacer(minLength: 0)
+            Text(self.resolvedColor.hexString)
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+            ColorPicker(
+                "\(self.title) \(L("provider_accent_color_title"))",
+                selection: self.colorBinding,
+                supportsOpacity: false)
+                .labelsHidden()
+            if self.hasOverride {
+                Button(L("provider_accent_color_reset")) {
+                    self.settings.setAccentColorOverride(nil, for: self.provider)
+                }
+                .controlSize(.small)
+            }
+        }
+    }
+
+    private var hasOverride: Bool {
+        self.settings.accentColorOverride(for: self.provider) != nil
+    }
+
+    private var resolvedColor: ProviderColor {
+        self.settings.accentColor(for: self.provider)
+    }
+
+    private var colorBinding: Binding<Color> {
+        Binding(
+            get: {
+                Color(
+                    red: self.resolvedColor.red,
+                    green: self.resolvedColor.green,
+                    blue: self.resolvedColor.blue)
+            },
+            set: { newValue in
+                guard let srgb = NSColor(newValue).usingColorSpace(.sRGB) else { return }
+                self.settings.setAccentColorOverride(
+                    ProviderColor(
+                        red: Double(srgb.redComponent),
+                        green: Double(srgb.greenComponent),
+                        blue: Double(srgb.blueComponent)),
+                    for: self.provider)
+            })
     }
 }

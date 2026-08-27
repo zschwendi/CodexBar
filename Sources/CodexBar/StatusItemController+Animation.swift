@@ -409,6 +409,8 @@ extension StatusItemController {
                 title: nil,
                 for: button)
         } else {
+            let laneColors = providerStack.map { _ in self.codexGrokBotMenuBarLaneColors() }
+            let laneColorSignature = laneColors.map { "\($0.top.hexString),\($0.bottom.hexString)" } ?? "template"
             let signature = [
                 "mode=icon",
                 "provider=\(primaryProvider.rawValue)",
@@ -424,6 +426,7 @@ extension StatusItemController {
                 "warningFlash=\(warningFlash ? "1" : "0")",
                 "anim=\(needsAnimation ? "1" : "0")",
                 "lanes=\(providerStack == nil ? "automatic" : "codex-grok-bot")",
+                "laneColors=\(laneColorSignature)",
                 "hideCritters=\(self.settings.menuBarHidesCritters ? "1" : "0")",
                 "highContrast=\(self.shouldUseHighContrastStatusItemContent ? "1" : "0")",
             ].joined(separator: "|")
@@ -443,6 +446,7 @@ extension StatusItemController {
                 statusIndicator: statusIndicator,
                 hideCritters: self.settings.menuBarHidesCritters,
                 lanePresentation: providerStack == nil ? .automatic : .codexGrokBot,
+                laneColors: laneColors,
                 quotaLayoutPolicy: .provider(primaryProvider))
             self.setButtonContent(
                 image: warningFlash ? Self.quotaWarningFlashImage(base: image) : image,
