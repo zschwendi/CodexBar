@@ -72,6 +72,7 @@ struct SettingsDefaultsState {
     var cursorQuotaUsageVisible: Bool
     var codexExternalOAuthSourcesAllowed: Bool
     var openAIWebAccessEnabled: Bool
+    var chatGPTProLimitsEnabled: Bool
     var openAIWebBatterySaverEnabled: Bool
     var backgroundWorkLowPowerModePreference: LowPowerModePreference
     var providerStorageFootprintsEnabled: Bool

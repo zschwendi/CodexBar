@@ -616,6 +616,7 @@ extension SettingsStore {
             userDefaults.set(false, forKey: "codexExternalOAuthSourcesAllowed")
         }
         let openAIWebAccessDefault = userDefaults.object(forKey: "openAIWebAccessEnabled") as? Bool
+        let chatGPTProLimitsEnabled = userDefaults.bool(forKey: "chatGPTProLimitsEnabled")
         let openAIWebAccessEnabled = openAIWebAccessDefault ?? false
         if Self.isRunningTests, openAIWebAccessDefault == nil {
             userDefaults.set(false, forKey: "openAIWebAccessEnabled")
@@ -728,6 +729,7 @@ extension SettingsStore {
             cursorQuotaUsageVisible: cursorQuotaUsageVisible,
             codexExternalOAuthSourcesAllowed: codexExternalOAuthSourcesAllowed,
             openAIWebAccessEnabled: openAIWebAccessEnabled,
+            chatGPTProLimitsEnabled: chatGPTProLimitsEnabled,
             openAIWebBatterySaverEnabled: openAIWebBatterySaverEnabled,
             backgroundWorkLowPowerModePreference: backgroundWorkLowPowerModePreference,
             providerStorageFootprintsEnabled: providerStorageFootprintsEnabled,

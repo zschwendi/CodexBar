@@ -1052,6 +1052,9 @@ extension UsageMenuCardView.Model {
             details = Self.sub2APILocalizedDetails(details)
         }
         details = Self.localizedProviderDetails(details, provider: input.provider)
+        if let chatLimits = Self.chatGPTProLimitsSection(input: input) {
+            details.append(chatLimits)
+        }
         guard input.hidePersonalInfo else { return details }
         return details.compactMap { section in
             let rows = section.rows.compactMap { row in

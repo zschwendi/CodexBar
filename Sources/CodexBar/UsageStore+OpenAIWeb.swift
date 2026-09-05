@@ -1070,6 +1070,7 @@ extension UsageStore {
             allowNavigationTimeoutRetry: allowNavigationTimeoutRetry,
             timeout: timeout,
             previousSnapshot: previousSnapshot,
+            includeChatGPTModelLimits: self.settings.chatGPTProLimitsEnabled,
             allowPageScrape: allowPageScrape)
         if allowPageScrape, Self.dashboardHasPageHistory(snapshot) {
             self.lastOpenAIDashboardPageScrapeAt = Date()

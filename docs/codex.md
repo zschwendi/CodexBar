@@ -88,6 +88,17 @@ Example:
 - It is intentionally opt-in because it loads `chatgpt.com` in a hidden WebView and can materially increase battery or network usage.
 - OpenAI web battery saver is a separate toggle. When enabled, routine background/settings-driven refreshes are reduced, but explicit manual refreshes still run.
 - OpenAI web battery saver currently defaults to off.
+- The fork adds an opt-in **ChatGPT Pro model limits (experimental)** toggle for GPT-6 Pro and GPT-5.6 Pro.
+  It uses the same account-scoped web connection, not OpenAI Platform billing or Codex/Spark quota windows.
+  After the Codex dashboard succeeds, it reads `/api/auth/session` (matching the dashboard email),
+  `/backend-api/models`, and `/backend-api/conversation/init` metadata. The last request contains no message,
+  prompt, or conversation ID; it does not generate a model response. Tokens stay in memory and are never logged.
+  Models are selected from the server's Pro catalog entries, without inventing server slugs.
+  The confirmed `model_limits` schema supplies blocked-model reset times, not remaining-message counts.
+  Missing counts remain **Count unavailable**, never 0%, 100%, or unlimited. Missing/failed data is **Unavailable**;
+  stale readings require a refresh. Tool-level `limits_progress` values are not treated as model message quotas.
+  This is a best-effort internal ChatGPT schema, not a documented public API. Live availability depends on the
+  account's rollout and web session. The feature does not change the fork's Codex/Grok Bot menu-bar pills or spend settings.
 - Preferences → Providers → Codex → OpenAI cookies (Automatic or Manual).
 - URL: `https://chatgpt.com/codex/settings/usage`.
 - Uses an off-screen `WKWebView` with a per-account `WKWebsiteDataStore`.

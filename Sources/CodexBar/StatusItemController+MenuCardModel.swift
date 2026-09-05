@@ -147,6 +147,7 @@ extension StatusItemController {
             showOptionalCreditsAndExtraUsage: self.settings.showOptionalCreditsAndExtraUsage,
             claudeDailyRoutinesUsageVisible: self.settings.claudeDailyRoutinesUsageVisible,
             codexSparkUsageVisible: self.settings.codexSparkUsageVisible,
+            chatGPTProLimitsEnabled: surface == .liveCard && self.settings.chatGPTProLimitsEnabled,
             codexResetCreditsVisible: self.settings.codexResetCreditsVisible,
             cursorQuotaUsageVisible: self.settings.cursorQuotaUsageVisible,
             copilotBudgetExtrasEnabled: self.settings.copilotBudgetExtrasEnabled,

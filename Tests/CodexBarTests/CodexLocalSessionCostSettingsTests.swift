@@ -40,6 +40,14 @@ struct CodexLocalSessionCostSettingsTests {
 
         fixture.settings.showOptionalCreditsAndExtraUsage = false
         #expect(sparkToggle.isEnabled?() == false)
+        let chatGPTToggle = try #require(toggles.first(where: { $0.id == "chatgpt-pro-limits" }))
+        #expect(!chatGPTToggle.binding.wrappedValue)
+        #expect(chatGPTToggle.isEnabled?() == fixture.settings.openAIWebAccessEnabled)
+        chatGPTToggle.binding.wrappedValue = true
+        #expect(fixture.settings.chatGPTProLimitsEnabled)
+        #expect(chatGPTToggle.isEnabled?() == true)
+        #expect(!fixture.settings.showOptionalCreditsAndExtraUsage)
+        #expect(!fixture.settings.codexSparkUsageVisible)
     }
 
     @Test

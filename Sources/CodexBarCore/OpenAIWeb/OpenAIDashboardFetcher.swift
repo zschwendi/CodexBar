@@ -227,6 +227,7 @@ public struct OpenAIDashboardFetcher {
         allowNavigationTimeoutRetry: Bool = true,
         timeout: TimeInterval = 60,
         previousSnapshot: OpenAIDashboardSnapshot? = nil,
+        includeChatGPTModelLimits: Bool = false,
         allowPageScrape: Bool = true) async throws -> OpenAIDashboardSnapshot
     {
         let store = OpenAIDashboardWebsiteDataStore.store(forAccountEmail: accountEmail, scope: cacheScope)
@@ -237,10 +238,11 @@ public struct OpenAIDashboardFetcher {
             allowNavigationTimeoutRetry: allowNavigationTimeoutRetry,
             timeout: timeout,
             previousSnapshot: previousSnapshot,
+            includeChatGPTModelLimits: includeChatGPTModelLimits,
             allowPageScrape: allowPageScrape)
     }
 
-    public func loadLatestDashboard(
+    func loadDashboardSnapshot(
         websiteDataStore: WKWebsiteDataStore,
         logger: ((String) -> Void)? = nil,
         debugDumpHTML: Bool = false,
@@ -788,7 +790,7 @@ public struct OpenAIDashboardFetcher {
         return OpenAISubscriptionMetadata.parse(activeUntil: activeUntil, willRenew: willRenew)
     }
 
-    private static func chatGPTCookieHeader(in store: WKWebsiteDataStore, deadline: Date?) async throws -> String {
+    static func chatGPTCookieHeader(in store: WKWebsiteDataStore, deadline: Date?) async throws -> String {
         let cookies = try await OpenAIDashboardBrowserCookieImporter.runBoundedValueCallback(
             deadline: deadline)
         { completion in
@@ -1165,6 +1167,7 @@ public struct OpenAIDashboardFetcher {
         allowNavigationTimeoutRetry _: Bool = true,
         timeout _: TimeInterval = 60,
         previousSnapshot _: OpenAIDashboardSnapshot? = nil,
+        includeChatGPTModelLimits _: Bool = false,
         allowPageScrape _: Bool = true) async throws -> OpenAIDashboardSnapshot
     {
         throw FetchError.noDashboardData(body: "OpenAI web dashboard fetch is only supported on macOS.")

@@ -146,6 +146,29 @@ struct CodexProviderImplementation: ProviderImplementation {
                 onAppDidBecomeActive: nil,
                 onAppearWhenEnabled: nil),
             ProviderSettingsToggleDescriptor(
+                id: "chatgpt-pro-limits",
+                title: "ChatGPT Pro model limits (experimental)",
+                subtitle: [
+                    "Shows GPT-6 Pro and GPT-5.6 Pro limit warnings and reset times reported by ChatGPT.",
+                    "Exact message counts are unavailable in this integration.",
+                    "Requires OpenAI web extras and a signed-in session.",
+                ].joined(separator: " "),
+                binding: context.boolBinding(\.chatGPTProLimitsEnabled),
+                statusText: nil,
+                actions: [],
+                isVisible: nil,
+                isEnabled: { context.settings.openAIWebAccessEnabled || context.settings.chatGPTProLimitsEnabled },
+                onChange: { enabled in
+                    guard enabled else { return }
+                    await context.store.refreshOpenAIDashboardIfNeeded(
+                        force: true,
+                        expectedGuard: context.store.freshCodexOpenAIWebRefreshGuard(),
+                        bypassCoalescing: true,
+                        allowCodexUsageBackfill: false)
+                },
+                onAppDidBecomeActive: nil,
+                onAppearWhenEnabled: nil),
+            ProviderSettingsToggleDescriptor(
                 id: "codex-external-oauth-sources",
                 title: "External Codex OAuth sources",
                 subtitle: [

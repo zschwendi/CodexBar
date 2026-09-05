@@ -70,6 +70,7 @@ extension SettingsStore {
         _ = self.codexResetCreditsVisible
         _ = self.cursorQuotaUsageVisible
         _ = self.openAIWebAccessEnabled
+        _ = self.chatGPTProLimitsEnabled
         _ = self.openAIWebBatterySaverEnabled
         _ = self.backgroundWorkLowPowerModePreference
         _ = self.providerStorageFootprintsEnabled

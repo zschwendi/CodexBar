@@ -265,6 +265,7 @@ struct CodexConsumerProjection {
     let canShowBuyCredits: Bool
     let hasUsageBreakdown: Bool
     let hasCreditsHistory: Bool
+    let chatGPTModelLimits: ChatGPTModelLimitsSnapshot?
 
     private let rateWindowsByLane: [RateLane: RateWindow]
     private let codeReviewRemainingPercent: Double?
@@ -330,6 +331,8 @@ struct CodexConsumerProjection {
             canShowBuyCredits: canShowBuyCredits,
             hasUsageBreakdown: hasUsageBreakdown,
             hasCreditsHistory: hasCreditsHistory,
+            chatGPTModelLimits: surface == .liveCard && dashboardVisibility == .attached
+                ? dashboard?.chatGPTModelLimits : nil,
             rateWindowsByLane: rateWindowsByLane,
             codeReviewRemainingPercent: dashboardVisibility == .attached ? dashboard?.codeReviewRemainingPercent : nil,
             codeReviewLimit: dashboardVisibility == .attached ? dashboard?.codeReviewLimit : nil,

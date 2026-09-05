@@ -872,6 +872,15 @@ extension SettingsStore {
         }
     }
 
+    var chatGPTProLimitsEnabled: Bool {
+        get { self.defaultsState.chatGPTProLimitsEnabled }
+        set {
+            self.defaultsState.chatGPTProLimitsEnabled = newValue
+            self.userDefaults.set(newValue, forKey: "chatGPTProLimitsEnabled")
+            self.noteBackgroundWorkSettingsChanged()
+        }
+    }
+
     var openAIWebBatterySaverEnabled: Bool {
         get { self.defaultsState.openAIWebBatterySaverEnabled }
         set {

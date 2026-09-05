@@ -30,6 +30,7 @@ extension UsageMenuCardView.Model {
         let showOptionalCreditsAndExtraUsage: Bool
         let claudeDailyRoutinesUsageVisible: Bool
         let codexSparkUsageVisible: Bool
+        let chatGPTProLimitsEnabled: Bool
         let codexResetCreditsVisible: Bool
         let cursorQuotaUsageVisible: Bool
         let copilotBudgetExtrasEnabled: Bool
@@ -78,6 +79,7 @@ extension UsageMenuCardView.Model {
             showOptionalCreditsAndExtraUsage: Bool,
             claudeDailyRoutinesUsageVisible: Bool = true,
             codexSparkUsageVisible: Bool = true,
+            chatGPTProLimitsEnabled: Bool = false,
             codexResetCreditsVisible: Bool = true,
             cursorQuotaUsageVisible: Bool = true,
             copilotBudgetExtrasEnabled: Bool = false,
@@ -123,6 +125,7 @@ extension UsageMenuCardView.Model {
             self.showOptionalCreditsAndExtraUsage = showOptionalCreditsAndExtraUsage
             self.claudeDailyRoutinesUsageVisible = claudeDailyRoutinesUsageVisible
             self.codexSparkUsageVisible = codexSparkUsageVisible
+            self.chatGPTProLimitsEnabled = chatGPTProLimitsEnabled
             self.codexResetCreditsVisible = codexResetCreditsVisible
             self.cursorQuotaUsageVisible = cursorQuotaUsageVisible
             self.copilotBudgetExtrasEnabled = copilotBudgetExtrasEnabled

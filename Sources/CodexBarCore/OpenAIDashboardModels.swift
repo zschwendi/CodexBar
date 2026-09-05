@@ -16,6 +16,8 @@ public struct OpenAIDashboardSnapshot: Codable, Equatable, Sendable {
     /// Named model-specific limits (e.g. Codex Spark) decoded from the dashboard
     /// `wham/usage` response's `additional_rate_limits` array.
     public let extraRateWindows: [NamedRateWindow]?
+    /// Chat conversation model cooldowns, never Codex percentage/credit windows.
+    public var chatGPTModelLimits: ChatGPTModelLimitsSnapshot?
     public let creditsRemaining: Double?
     public let codexCreditLimit: CodexCreditLimitSnapshot?
     public let accountPlan: String?
@@ -34,6 +36,7 @@ public struct OpenAIDashboardSnapshot: Codable, Equatable, Sendable {
         primaryLimit: RateWindow? = nil,
         secondaryLimit: RateWindow? = nil,
         extraRateWindows: [NamedRateWindow]? = nil,
+        chatGPTModelLimits: ChatGPTModelLimitsSnapshot? = nil,
         creditsRemaining: Double? = nil,
         codexCreditLimit: CodexCreditLimitSnapshot? = nil,
         accountPlan: String? = nil,
@@ -51,6 +54,7 @@ public struct OpenAIDashboardSnapshot: Codable, Equatable, Sendable {
         self.primaryLimit = primaryLimit
         self.secondaryLimit = secondaryLimit
         self.extraRateWindows = extraRateWindows
+        self.chatGPTModelLimits = chatGPTModelLimits
         self.creditsRemaining = creditsRemaining
         self.codexCreditLimit = codexCreditLimit
         self.accountPlan = accountPlan
@@ -70,6 +74,7 @@ public struct OpenAIDashboardSnapshot: Codable, Equatable, Sendable {
         case primaryLimit
         case secondaryLimit
         case extraRateWindows
+        case chatGPTModelLimits
         case creditsRemaining
         case codexCreditLimit
         case accountPlan
@@ -102,6 +107,8 @@ public struct OpenAIDashboardSnapshot: Codable, Equatable, Sendable {
         self.extraRateWindows = try container.decodeIfPresent(
             [NamedRateWindow].self,
             forKey: .extraRateWindows)
+        self.chatGPTModelLimits = try container.decodeIfPresent(
+            ChatGPTModelLimitsSnapshot.self, forKey: .chatGPTModelLimits)
         self.creditsRemaining = try container.decodeIfPresent(Double.self, forKey: .creditsRemaining)
         self.codexCreditLimit = try container.decodeIfPresent(CodexCreditLimitSnapshot.self, forKey: .codexCreditLimit)
         self.accountPlan = try container.decodeIfPresent(String.self, forKey: .accountPlan)
