@@ -7,6 +7,34 @@ import Testing
 @Suite(.serialized)
 struct UsageStoreCodexCostCatchUpTests {
     @Test
+    func `combined low power and thermal pressure publishes thermal pause without scanning`() async throws {
+        let store = try Self.makeStore(suite: "combined-thermal-pause")
+        var advanceCount = 0
+        var sleepDurations: [TimeInterval] = []
+        store._test_codexCostCatchUpStatusOverride = { _ in
+            CostUsageFetcher.CodexScanCatchUpStatus(pending: true, progressKey: "pending")
+        }
+        store._test_codexCostCatchUpAdvanceOverride = { _, _, _ in
+            advanceCount += 1
+            return CostUsageFetcher.CodexScanCatchUpStatus(pending: false, progressKey: "complete")
+        }
+        store._test_codexCostCatchUpResourceStateOverride = { (.battery, true, .serious) }
+        store._test_codexCostCatchUpSleepOverride = { duration in
+            sleepDurations.append(duration)
+            throw CancellationError()
+        }
+
+        store.startCodexCostCatchUpIfNeeded()
+        let task = try #require(store.codexCostCatchUpTask)
+        await task.value
+
+        #expect(store.codexCostCatchUpActivity?.phase == .paused)
+        #expect(store.codexCostCatchUpActivity?.pauseReason == .thermal)
+        #expect(sleepDurations == [CodexCostCatchUpPolicy.constrainedRetryDelay])
+        #expect(advanceCount == 0)
+    }
+
+    @Test
     func `incomplete refresh cannot replace an established same-scope snapshot`() throws {
         let store = try Self.makeStore(suite: "retains-established")
         store.publishTokenSnapshot(Self.tokenSnapshot(cost: 3, now: Date()), for: .codex)
@@ -52,12 +80,17 @@ struct UsageStoreCodexCostCatchUpTests {
     func `bounded catch-up automatically publishes only the final stable snapshot`() async throws {
         let store = try Self.makeStore(suite: "publishes-final")
         var snapshotLoadCount = 0
+        var cachedLoadCount = 0
         var statusLoadCount = 0
         var advanceCount = 0
         var sleepDurations: [TimeInterval] = []
         store._test_tokenUsageSnapshotLoaderOverride = { _, _, now, _, _ in
             snapshotLoadCount += 1
             return Self.tokenSnapshot(cost: Double(snapshotLoadCount), now: now)
+        }
+        store._test_cachedCodexTokenSnapshotLoaderOverride = { now, _, _ in
+            cachedLoadCount += 1
+            return (Self.tokenSnapshot(cost: 2, now: now), now, nil)
         }
         store._test_codexCostCatchUpStatusOverride = { _ in
             statusLoadCount += 1
@@ -81,12 +114,13 @@ struct UsageStoreCodexCostCatchUpTests {
 
         await store.refreshTokenUsage(.codex, force: true)
         await Self.waitUntil {
-            store.codexCostCatchUpTask == nil && snapshotLoadCount == 2
+            store.codexCostCatchUpTask == nil && cachedLoadCount == 1
         }
 
         #expect(advanceCount == 2)
         #expect(statusLoadCount == 2)
-        #expect(snapshotLoadCount == 2)
+        #expect(snapshotLoadCount == 1)
+        #expect(cachedLoadCount == 1)
         #expect(sleepDurations.first == 1998)
         #expect(store.tokenSnapshot(for: .codex)?.last30DaysCostUSD == 2)
         #expect(store.tokenSnapshotPublicationRevision(for: .codex) == 2)
@@ -362,12 +396,16 @@ struct UsageStoreCodexCostCatchUpTests {
         settings.costUsageHistoryDays = 30
         let metadata = try #require(ProviderRegistry.shared.metadata[.codex])
         settings.setProviderEnabled(provider: .codex, metadata: metadata, enabled: true)
-        return UsageStore(
+        let store = UsageStore(
             fetcher: UsageFetcher(environment: [:]),
             browserDetection: BrowserDetection(cacheTTL: 0),
             settings: settings,
             startupBehavior: .testing,
             environmentBase: [:])
+        store._test_cachedCodexTokenSnapshotLoaderOverride = { now, _, _ in
+            (Self.tokenSnapshot(cost: 1, now: now), now, nil)
+        }
+        return store
     }
 
     private static func tokenSnapshot(

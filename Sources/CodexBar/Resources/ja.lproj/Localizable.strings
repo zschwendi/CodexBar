@@ -45,6 +45,7 @@
 "hooks_any_provider" = "すべてのプロバイダー";
 "hooks_threshold" = "使用率 ≥ で実行";
 "hooks_threshold_placeholder" = "90";
+"hooks_executable" = "実行ファイル";
 "hooks_executable_placeholder" = "/usr/local/bin/my-command";
 "hooks_arguments_placeholder" = "引数";
 "hooks_argument_placeholder" = "引数";
@@ -239,6 +240,7 @@
 "No cost history data." = "コスト履歴データがありません。";
 "No data available" = "データがありません";
 "No data yet" = "まだデータがありません";
+"Workspaces" = "ワークスペース";
 "No enabled providers available for Overview." = "概要に表示できる有効なプロバイダがありません。";
 "No providers selected" = "プロバイダが選択されていません";
 "No token accounts yet." = "トークンアカウントはまだありません。";
@@ -664,6 +666,9 @@
 "surprise_me_subtitle" = "エージェントたちがメニューバーで少し遊ぶのが好きか試してみてください。";
 "hide_personal_info_title" = "個人情報を隠す";
 "hide_personal_info_subtitle" = "メニューバーとメニュー UI のメールアドレスを伏せ字にします。";
+"hide_cost_history_identity_subtitle" = "保存データを変更せずに、コスト履歴のプロジェクト名・ソース名とパスも非表示にします。";
+"Project %d" = "プロジェクト %d";
+"Source %d" = "ソース %d";
 "show_provider_storage_usage_title" = "プロバイダのストレージ使用量を表示";
 "show_provider_storage_usage_subtitle" = "ローカルディスクの使用量をメニューに表示します。既知のプロバイダ所有パスをバックグラウンドでスキャンします。";
 "section_keychain_access" = "キーチェーンアクセス";
@@ -1482,6 +1487,7 @@
 "Total usage" = "合計使用量";
 "claude_oauth_keychain_access_revoked" = "Claude Code のトークン更新により、Claude キーチェーンへのアクセスが取り消されました。「更新」をクリックしてアクセスを再許可するか、Claude の使用量の取得元を CLI/Web に切り替えてください。";
 "claude_showing_last_known_usage" = "最後に取得した既知の使用量を表示しています（取得: %@）。";
+"claude_limited_usage_detail" = "使用量の詳細情報は限られています";
 /* Spend dashboard cost analysis */
 "90d" = "90d";
 "Input" = "Input";

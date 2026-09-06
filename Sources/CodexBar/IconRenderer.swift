@@ -716,6 +716,7 @@ enum IconRenderer {
                 let twistAntigravity = decorations.contains(.antigravity)
                 let twistFactory = decorations.contains(.factory)
                 let twistWarp = decorations.contains(.warp)
+                var statusOverlayAttachesToProminentMeter = false
 
                 if lanePresentation == .codexGrokBot {
                     // These lanes have fixed identities. Keep both tracks in place even while one provider is
@@ -733,6 +734,7 @@ enum IconRenderer {
                           !usesMissingSecondaryLayout
                 {
                     // Some providers surface their only meaningful quota in the secondary slot.
+                    statusOverlayAttachesToProminentMeter = true
                     drawBar(
                         rectPx: creditsRectPx,
                         remaining: bottomValue,
@@ -783,6 +785,7 @@ enum IconRenderer {
                         } else if !quotaLayoutPolicy.reservesMissingSecondaryLane, let topValue {
                             // One meaningful quota should read as one meter. Reserving an unavailable second
                             // lane makes (for example) 46% remaining look like roughly 23% of the icon.
+                            statusOverlayAttachesToProminentMeter = true
                             drawBar(
                                 rectPx: creditsRectPx,
                                 remaining: topValue,
@@ -839,7 +842,9 @@ enum IconRenderer {
                     drawBar(rectPx: creditsBottomRectPx, remaining: bottomValue)
                 }
 
-                Self.drawStatusOverlay(indicator: statusIndicator)
+                Self.drawStatusOverlay(
+                    indicator: statusIndicator,
+                    attachesToProminentMeter: statusOverlayAttachesToProminentMeter)
             }
         }
 
@@ -1055,7 +1060,10 @@ enum IconRenderer {
         path.fill()
     }
 
-    private static func drawStatusOverlay(indicator: ProviderStatusIndicator) {
+    private static func drawStatusOverlay(
+        indicator: ProviderStatusIndicator,
+        attachesToProminentMeter: Bool)
+    {
         guard indicator.hasIssue else { return }
         let color = NSColor.labelColor
 
@@ -1064,7 +1072,7 @@ enum IconRenderer {
             let size: CGFloat = 4
             let rect = Self.snapRect(
                 x: Self.baseSize.width - size - 2,
-                y: 2,
+                y: attachesToProminentMeter ? 5 : 2,
                 width: size,
                 height: size)
             Self.clearStatusOverlayHalo(

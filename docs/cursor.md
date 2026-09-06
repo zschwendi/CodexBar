@@ -21,6 +21,9 @@ cookies when the desktop tokens are missing, expired, invalid, or rejected.
 
 2) **Cursor.app local auth**
    - Reads Cursor.app's VS Code-style global state DB for `ItemTable` key `cursorAuth/accessToken`.
+   - BLOB decoding recognizes BOM-less ASCII UTF-16LE tokens before UTF-8, which would otherwise keep interleaved
+     NUL bytes. Other encodings retain the existing UTF-8/UTF-16LE fallback; tokens are not normalized, and malformed
+     nonempty values remain distinct from a missing session so they cannot enable stale cached-account fallback.
    - Files consulted by SQLite:
      - macOS main DB: `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`
      - Active WAL sidecars when present: `state.vscdb-wal` and `state.vscdb-shm`

@@ -165,7 +165,7 @@ struct GrokBotAppAuthStore: CursorAppAuthSessionProviding {
         case .interactionRequired:
             guard Self.claimInteractiveRead() else { return nil }
             return try Self.readSafeStoragePassword(disallowInteraction: false)
-        case .notFound:
+        case .temporarilyUnavailable, .notFound:
             return nil
         case let .failure(status):
             throw StoreError.keychainFailure(OSStatus(status))

@@ -49,6 +49,7 @@ extension UsageMenuCardView.Model {
         let paceVisible: Bool
         let usesLiveSubtitle: Bool
         let preferredCurrencyCode: String
+        let costUsageBucketCalendar: Calendar
         let now: Date
 
         init(
@@ -96,6 +97,7 @@ extension UsageMenuCardView.Model {
             paceVisible: Bool = true,
             usesLiveSubtitle: Bool = false,
             preferredCurrencyCode: String = "auto",
+            costUsageBucketCalendar: Calendar = .current,
             now: Date)
         {
             self.provider = provider
@@ -142,6 +144,7 @@ extension UsageMenuCardView.Model {
             self.paceVisible = paceVisible
             self.usesLiveSubtitle = usesLiveSubtitle
             self.preferredCurrencyCode = preferredCurrencyCode
+            self.costUsageBucketCalendar = costUsageBucketCalendar
             self.now = now
         }
     }

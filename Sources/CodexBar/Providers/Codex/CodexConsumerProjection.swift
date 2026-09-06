@@ -266,6 +266,7 @@ struct CodexConsumerProjection {
     let hasUsageBreakdown: Bool
     let hasCreditsHistory: Bool
     let chatGPTModelLimits: ChatGPTModelLimitsSnapshot?
+    let extraUsageCost: ProviderCostSnapshot?
 
     private let rateWindowsByLane: [RateLane: RateWindow]
     private let codeReviewRemainingPercent: Double?
@@ -283,11 +284,17 @@ struct CodexConsumerProjection {
         let visibleRateLanes = self.visibleRateLanes(from: rateWindowsByLane, snapshot: context.snapshot)
         let planUtilizationLanes = self.planUtilizationLanes(from: rateWindowsByLane)
 
+        let extraUsageCost = context.showOptionalCreditsAndExtraUsage
+            ? CodexExtraUsageCost.resolving(
+                liveCredits: context.liveCredits,
+                attached: context.snapshot?.providerCost)
+            : nil
         let creditsProjection: CreditsProjection? = if allowsLiveAdjuncts,
                                                        context.liveCredits != nil || context.rawCreditsError != nil
         {
             CreditsProjection(
-                snapshot: context.liveCredits,
+                snapshot: CodexExtraUsageCost.creditsForDisplay(
+                    context.liveCredits, attached: context.snapshot?.providerCost),
                 userFacingError: CodexUIErrorMapper.userFacingMessage(context.rawCreditsError))
         } else {
             nil
@@ -333,6 +340,7 @@ struct CodexConsumerProjection {
             hasCreditsHistory: hasCreditsHistory,
             chatGPTModelLimits: surface == .liveCard && dashboardVisibility == .attached
                 ? dashboard?.chatGPTModelLimits : nil,
+            extraUsageCost: extraUsageCost,
             rateWindowsByLane: rateWindowsByLane,
             codeReviewRemainingPercent: dashboardVisibility == .attached ? dashboard?.codeReviewRemainingPercent : nil,
             codeReviewLimit: dashboardVisibility == .attached ? dashboard?.codeReviewLimit : nil,
@@ -464,7 +472,20 @@ struct CodexConsumerProjection {
         switch surface {
         case .menuBar, .overrideCard:
             guard context.showOptionalCreditsAndExtraUsage else { return nil }
-            return context.liveCredits?.codexCreditLimit
+            let live = context.liveCredits?.codexCreditLimit
+            guard let cost = CodexExtraUsageCost.resolving(
+                liveCredits: context.liveCredits, attached: context.snapshot?.providerCost),
+                cost.currencyCode == CodexExtraUsageCost.currencyCode, cost.limit > 0
+            else { return live }
+            if let live, live.updatedAt >= cost.updatedAt {
+                return live
+            }
+            return CodexCreditLimitSnapshot(
+                used: cost.used,
+                limit: cost.limit,
+                remainingPercent: max(0, 100 - cost.used / cost.limit * 100),
+                resetsAt: cost.resetsAt,
+                updatedAt: cost.updatedAt)
         case .liveCard, .widget:
             return nil
         }
@@ -707,7 +728,15 @@ extension UsageStore {
         case .secondary, .tertiary:
             return second ?? first
         case .extraUsage:
-            return first
+            return projection.extraUsageCost.flatMap { cost in
+                guard cost.limit > 0 else { return nil }
+                let usedPercent = max(0, min(100, (cost.used / cost.limit) * 100))
+                return RateWindow(
+                    usedPercent: usedPercent,
+                    windowMinutes: nil,
+                    resetsAt: cost.resetsAt,
+                    resetDescription: nil)
+            } ?? first
         case .average:
             guard self.settings.menuBarMetricSupportsAverage(for: .codex),
                   let primary = first,

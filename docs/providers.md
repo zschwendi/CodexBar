@@ -39,6 +39,9 @@ adds or ranks amounts across currencies.
 The page also shows token mix (input / output / cache / reasoning), priced/unpriced/unmetered/estimated coverage,
 sessions, Codex projects, and a 365-day token heatmap. A heatmap day with no coverage is a gap, not zero activity,
 and is not clickable. Custom list-price overlays are documented in `docs/model-pricing.md`.
+Cached and combined reports retain token-class details and known request counts. Coverage is combined from each
+source's existing classification, so a priced source cannot hide another source's unpriced or unmetered rows.
+If coverage totals cannot fit, aggregation falls back to existing request or daily-row inference without changing costs or stored data.
 
 OpenCodex `~/.opencodex/usage.jsonl` is an opt-in, read-only spend source (off by default). It is not a quota
 Provider. When both OpenCodex logs and native Codex sessions are present they stay on separate rows; merging would
@@ -125,6 +128,7 @@ complete when the available scan window covers fewer days.
 - CLI RPC default: `codex ... app-server` JSON-RPC (`account/read`, `account/rateLimits/read`).
 - CLI PTY: manual diagnostics/parser coverage only; automatic refresh does not launch bare Codex TUI.
 - Local cost usage: scans `CODEX_HOME` (or `~/.codex`) `sessions` and sibling `archived_sessions` JSONL files for the configured history window.
+- Completed cost catch-up publishes validated cached history without starting another scan. Native and included Pi/OMP caches must cover the requested window; unavailable or incompatible history preserves existing totals until a later refresh. Token timestamps retain the actual cache scan time. This does not resolve catch-up that remains pending while an active log continuously grows.
 - Status: Statuspage.io (OpenAI).
 - Details: `docs/codex.md`.
 
@@ -192,7 +196,7 @@ complete when the available scan window covers fewer days.
 ## Kilo
 - API token from `~/.codexbar/config.json` (`providers[].apiKey`) or `KILO_API_KEY`.
 - Auto mode tries API first and falls back to CLI auth when API credentials are missing or unauthorized.
-- CLI auth source: `~/.local/share/kilo/auth.json` (`kilo.access`), typically created by `kilo login`.
+- CLI auth source: `~/.local/share/kilo/auth.json` (`kilo.access`), typically created by `kilo auth login`.
 - Status: none yet.
 - Details: `docs/kilo.md`.
 
@@ -505,6 +509,7 @@ provider-specific cookie validation, endpoints, login detection, and error trans
 - Linux CLI supports configured manual cookies; automatic browser import remains macOS-only.
 - Reads 5-hour and weekly rolling limits plus monthly USD credits and billing-cycle usage from `api.commandcode.ai`.
 - Automatic import looks for better-auth session cookies from `commandcode.ai` / `www.commandcode.ai`.
+- Debug builds support `COMMANDCODE_API_URL` for synthetic loopback tests; release builds use the official billing endpoint.
 - Status: none yet.
 - Details: `docs/command-code.md`.
 
