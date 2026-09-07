@@ -237,6 +237,7 @@ is limited, using additional rows when needed.
 - Cache:
   - Native session store: `~/Library/Caches/CodexBar/cost-usage/cost-usage.sqlite`
   - pi-compatible session cache: `~/Library/Caches/CodexBar/cost-usage/pi-sessions-v8.json`
+    is replaced atomically on macOS and Linux, retaining complete cached scan state across refreshes.
   - Catch-up status reads progress metadata without loading historical usage JSON or replay bodies. Cached reports
     retain row-level pricing evidence and project/session details, but omit raw token snapshots, accumulator state,
     and replay bodies. File cursor metadata, including JSONL resume state, remains available for progress tracking.
@@ -263,6 +264,7 @@ is limited, using additional rows when needed.
   still scan local history. Faster provider refreshes still update quota/status. The scanner's default 60-second
   debounce is a separate internal limit, bypassed by forced scans and catch-up passes; it is not the app's refresh cadence.
 - Usage & Spend catch-up remains inactive after a no-progress or error pause until you choose **Refresh** in the dashboard toolbar or catch-up panel. Opening the dashboard or receiving background updates does not retry those terminal pauses. Low-power and thermal pauses can still recover automatically; this retry policy does not change cached history or token accounting.
+- Automatic Codex catch-up scheduling in both usage and Spend Dashboard honors the app’s 30-minute Low Power Mode minimum after each pass. Explicit acceleration remains immediate, and physical low-power/thermal pauses retain their own retry policy. The setting applies when the next delay is computed; an already pending sleep is not replanned.
 - Automatic catch-up reports thermal pressure when serious heat and Low Power Mode coexist. Both constraints keep the existing 60-second pause before rechecking resource state.
 - A catch-up worker that loses its account or settings scope clears its abandoned Refreshing activity on exit. Legitimate pauses remain visible, and an older worker cannot clear a replacement worker's activity.
 - Inline cost charts preserve a slot for every day in that window, using the selected cost-bucket time zone and the snapshot's date. Missing days are zero only after history coverage is established; unscanned days and entries without prices remain unknown. Long windows fit within the menu width without dropping dates.
