@@ -84,6 +84,50 @@ struct DashboardSnapshotBuilderTests {
     }
 
     @Test
+    func `dashboard producer can skip cost collection while preserving usage`() async throws {
+        let recorder = DashboardProviderSelectionRecorder()
+        let producer = DashboardSnapshotProducer(
+            collectUsage: { providers in
+                await recorder.recordUsage(providers)
+                var output = UsageCommandOutput()
+                output.payload = providers.map { provider in
+                    ProviderPayload(
+                        provider: provider,
+                        account: nil,
+                        version: nil,
+                        source: "test",
+                        status: nil,
+                        usage: nil,
+                        credits: nil,
+                        antigravityPlanInfo: nil,
+                        openaiDashboard: nil,
+                        error: nil)
+                }
+                return output
+            },
+            collectCost: { providers, _ in
+                await recorder.recordCost(providers)
+                return []
+            },
+            now: { Date(timeIntervalSince1970: 1_800_000_000) })
+        let config = CodexBarConfig(providers: [
+            ProviderConfig(id: .codex, enabled: true),
+        ])
+
+        let result = try await producer.collect(
+            config: config,
+            refreshInterval: 0,
+            codexBarVersion: nil,
+            includeCost: false)
+
+        let object = try self.jsonObject(result.payload)
+        let providers = try #require(object["providers"] as? [[String: Any]])
+        #expect(providers.compactMap { $0["id"] as? String } == ["codex"])
+        #expect(await recorder.usageProviders() == [.codex])
+        #expect(await recorder.costProviders().isEmpty)
+    }
+
+    @Test
     func `producer defaults to full identity and keeps stable order and partial errors`() async throws {
         let generatedAt = Date(timeIntervalSince1970: 1_800_000_000)
         let healthy = self.identityPayload(email: "user@example.com")

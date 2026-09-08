@@ -27,6 +27,9 @@ struct DashboardOptions: CommanderParsable {
         help: "Overall fetch timeout in seconds, 0...86400 (default 30; 0 disables)")
     var timeout: Double?
 
+    @Flag(name: .long("no-cost"), help: "Skip token-cost collection")
+    var noCost: Bool = false
+
     @Option(
         name: .long("identity"),
         help: "Account identity detail: full (default) or redacted. Use redacted when the snapshot may leave a " +
@@ -65,15 +68,21 @@ struct DashboardSnapshotProducer: Sendable {
         refreshInterval: TimeInterval,
         codexBarVersion: String?,
         identityMode: DashboardIdentityMode = .full,
-        providers requestedProviders: [UsageProvider]? = nil) async throws -> DashboardSnapshotResult
+        providers requestedProviders: [UsageProvider]? = nil,
+        includeCost: Bool = true) async throws -> DashboardSnapshotResult
     {
         let selection = requestedProviders.map(ProviderSelection.custom) ?? CodexBarCLI.providerSelection(
             rawOverride: nil,
             enabled: config.enabledProviders().compactMap(\.firstPartyProvider))
         let usageOutput = try await self.collectUsage(selection.asList)
-        let costPayloads = await self.collectCost(
-            CodexBarCLI.costProviders(from: selection),
-            config)
+        let costPayloads: [CostPayload]
+        if includeCost {
+            costPayloads = await self.collectCost(
+                CodexBarCLI.costProviders(from: selection),
+                config)
+        } else {
+            costPayloads = []
+        }
         // Provider-specific by design: claude-swap account enrichment is a
         // Claude-only integration, so provider-filtered snapshots skip it
         // unless the Claude row is requested.
@@ -234,7 +243,8 @@ extension CodexBarCLI {
                 config: context.config,
                 refreshInterval: context.usage.refreshInterval,
                 codexBarVersion: context.codexBarVersion,
-                identityMode: identityMode)
+                identityMode: identityMode,
+                includeCost: !values.flags.contains("noCost"))
         } catch {
             await Self.shutdownDashboardRuntime(
                 providerOperations: providerOperations,
