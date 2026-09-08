@@ -53,6 +53,35 @@ struct CodexBarCoreResourcesTests {
         #expect(resolved.bundleURL.resolvingSymlinksInPath() == target.resolvingSymlinksInPath())
     }
 
+    @Test(arguments: ["Helpers", "MacOS"])
+    func `resolver finds a resource bundle in an enclosing app for embedded CLI`(
+        executableDirectoryName: String) throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CodexBarCoreResourcesEmbeddedTests-\(UUID().uuidString)")
+        let appURL = root.appendingPathComponent("Fake.app")
+        let executableDirectory = appURL
+            .appendingPathComponent("Contents")
+            .appendingPathComponent(executableDirectoryName)
+        let resourcesDirectory = appURL.appendingPathComponent("Contents/Resources")
+        try FileManager.default.createDirectory(at: executableDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: resourcesDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let sourceBundle = try #require(CodexBarCoreResources.bundle)
+        let target = resourcesDirectory.appendingPathComponent("CodexBar_CodexBarCore.bundle")
+        try FileManager.default.copyItem(at: sourceBundle.bundleURL.resolvingSymlinksInPath(), to: target)
+        let executableURL = executableDirectory.appendingPathComponent("CodexBarCLI")
+        try Data().write(to: executableURL)
+
+        let resolved = try #require(CodexBarCoreResources.resolve(
+            mainBundle: .main,
+            executableURL: executableURL,
+            swiftPMBuildDirectory: nil))
+        #expect(resolved.bundleURL.resolvingSymlinksInPath() == target.resolvingSymlinksInPath())
+        #expect(resolved.url(forResource: "provider-plugin-prelude", withExtension: "js") != nil)
+    }
+
     @Test
     func `resolver returns nil when executable and build bundles are missing`() throws {
         let root = FileManager.default.temporaryDirectory

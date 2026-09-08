@@ -43,9 +43,17 @@ public enum CodexBarCoreResources {
             }
         }
 
-        let executableDirectory = (executableURL ?? Self.runningExecutableURL(bundle: mainBundle))?
+        let resolvedExecutableURL = (executableURL ?? Self.runningExecutableURL(bundle: mainBundle))?
             .resolvingSymlinksInPath()
-            .deletingLastPathComponent()
+        if let resolvedExecutableURL,
+           let bundle = Self.embeddedAppResourceBundle(
+               executableURL: resolvedExecutableURL,
+               bundleName: bundleName)
+        {
+            return bundle
+        }
+
+        let executableDirectory = resolvedExecutableURL?.deletingLastPathComponent()
             ?? mainBundle.bundleURL
         for swiftPMBundleName in swiftPMBundleNames {
             let executableCandidate = executableDirectory.appendingPathComponent(swiftPMBundleName)
@@ -66,6 +74,28 @@ public enum CodexBarCoreResources {
             }
         }
         return nil
+    }
+
+    /// Finds resources moved into an enclosing app while keeping standalone
+    /// executables supported by the adjacent-bundle lookup above.
+    private static func embeddedAppResourceBundle(
+        executableURL: URL,
+        bundleName: String) -> Bundle?
+    {
+        let executableDirectory = executableURL.deletingLastPathComponent()
+        guard executableDirectory.lastPathComponent == "Helpers"
+                || executableDirectory.lastPathComponent == "MacOS"
+        else { return nil }
+
+        let contentsDirectory = executableDirectory.deletingLastPathComponent()
+        guard contentsDirectory.lastPathComponent == "Contents" else { return nil }
+        let appDirectory = contentsDirectory.deletingLastPathComponent()
+        guard appDirectory.pathExtension == "app" else { return nil }
+
+        let resourceURL = contentsDirectory
+            .appendingPathComponent("Resources", isDirectory: true)
+            .appendingPathComponent(bundleName, isDirectory: true)
+        return Bundle(url: resourceURL)
     }
 
     private static func runningExecutableURL(bundle: Bundle) -> URL? {
