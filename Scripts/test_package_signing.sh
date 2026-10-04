@@ -86,14 +86,15 @@ import tempfile
 from pathlib import Path
 
 source = Path(sys.argv[1]).read_text()
-start = source.index('BUNDLE_ID="com.steipete.codexbar"')
+start = source.index("\nBUNDLE_ID=") + 1
 end = source.index('BUILD_TIMESTAMP=', start)
 generation = source[start:end]
 start = source.index('if [[ "$EMBED_PROVISIONING_PROFILE" == "1" ]]; then')
 end = source.index('\nfi', start) + len('\nfi')
 embedding = source[start:end]
 
-for team, configuration, signing, profile_present in itertools.product(
+for override, team, configuration, signing, profile_present in itertools.product(
+    [None, 'com.steipete.codexbar', 'com.example.signing-fixture'],
     ['Y5PE65HELJ', 'TESTTEAM01'], ['release', 'debug'], ['identity', 'adhoc'], [False, True],
 ):
     with tempfile.TemporaryDirectory(prefix='codexbar-entitlement-test-') as directory:
@@ -106,20 +107,29 @@ for team, configuration, signing, profile_present in itertools.product(
             # Marker tests selection/copying only, not certificate or profile validity.
             profile.write_text('synthetic profile selection marker\n')
         env = dict(os.environ, ROOT=str(root), APP=str(app), APP_TEAM_ID=team,
-                   LOWER_CONF=configuration, SIGNING_MODE=signing, ALLOW_LLDB='0')
+                   LOWER_CONF=configuration, SIGNING_MODE=signing, ALLOW_LLDB='0', APP_DISPLAY_NAME='Signing fixture')
+        env.pop('CODEXBAR_BUNDLE_ID', None)
+        if override is not None:
+            env['CODEXBAR_BUNDLE_ID'] = override
+        base_bundle = override or 'com.zephyrstudios.zcodexbar.menubar'
         result = subprocess.run(['bash', '-eu', '-c', generation + '\n' + embedding],
                                 env=env, capture_output=True, text=True)
-        cloudkit = team == 'Y5PE65HELJ' and configuration == 'release' and signing == 'identity'
+        cloudkit = (base_bundle == 'com.steipete.codexbar' and team == 'Y5PE65HELJ'
+                    and configuration == 'release' and signing == 'identity')
         if cloudkit and not profile_present:
             assert result.returncode != 0 and 'Missing' in result.stderr, result.stderr
             continue
         assert result.returncode == 0, (team, configuration, signing, profile_present, result.stderr)
-        bundle = 'com.steipete.codexbar' + ('.debug' if configuration == 'debug' else '')
+        bundle = base_bundle + ('.debug' if configuration == 'debug' else '')
         expected_group = f'{team}.{bundle}'
         app_entitlements = plistlib.loads((root / '.build/entitlements/CodexBar.entitlements').read_bytes())
         widget_entitlements = plistlib.loads((root / '.build/entitlements/CodexBarWidget.entitlements').read_bytes())
-        assert app_entitlements['com.apple.security.application-groups'] == [expected_group]
-        assert widget_entitlements['com.apple.security.application-groups'] == [expected_group]
+        if signing == 'identity':
+            assert app_entitlements['com.apple.security.application-groups'] == [expected_group]
+            assert widget_entitlements['com.apple.security.application-groups'] == [expected_group]
+        else:
+            assert 'com.apple.security.application-groups' not in app_entitlements
+            assert 'com.apple.security.application-groups' not in widget_entitlements
         assert widget_entitlements['com.apple.security.app-sandbox'] is True
         embedded = app / 'Contents/embedded.provisionprofile'
         assert embedded.exists() == cloudkit
@@ -130,8 +140,8 @@ for team, configuration, signing, profile_present in itertools.product(
             assert app_entitlements['com.apple.developer.icloud-services'] == ['CloudKit']
             assert app_entitlements['com.apple.developer.icloud-container-identifiers'] == [f'iCloud.{bundle}']
         else:
-            assert set(app_entitlements) == {'com.apple.security.application-groups'}
-print('16 entitlement/profile configuration cases passed.')
+            assert set(app_entitlements) == ({'com.apple.security.application-groups'} if signing == 'identity' else set())
+print('48 default/override entitlement/profile configuration cases passed.')
 PY
 
 echo "Package signing tests passed."

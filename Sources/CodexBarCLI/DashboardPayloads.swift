@@ -1,4 +1,5 @@
 import CodexBarCore
+import Crypto
 import Foundation
 
 /// How much account identity a dashboard snapshot exposes. Dashboard commands
@@ -51,6 +52,8 @@ struct DashboardProviderPayload: Encodable {
     let display: DashboardDisplayPayload
     let error: ProviderErrorPayload?
     let updatedAt: Date?
+    /// Timestamp of the allowance observation, independent of status, credits and cost freshness.
+    let allowanceUpdatedAt: Date?
     /// Per-account entries from a local multi-account source (today: claude-swap).
     /// Additive schema-v1 data; absent for providers without such a source.
     let accounts: [DashboardAccountPayload]?
@@ -73,7 +76,8 @@ struct DashboardProviderPayload: Encodable {
         updatedAt: Date?,
         accounts: [DashboardAccountPayload]?,
         accountsError: String?,
-        detail: DashboardSnapshotDetail = .full)
+        detail: DashboardSnapshotDetail = .full,
+        allowanceUpdatedAt: Date? = nil)
     {
         self.id = id
         self.name = name
@@ -87,6 +91,7 @@ struct DashboardProviderPayload: Encodable {
         self.display = display
         self.error = error
         self.updatedAt = updatedAt
+        self.allowanceUpdatedAt = allowanceUpdatedAt
         self.accounts = accounts
         self.accountsError = accountsError
         self.detail = detail
@@ -105,6 +110,7 @@ struct DashboardProviderPayload: Encodable {
         case display
         case error
         case updatedAt
+        case allowanceUpdatedAt
         case accounts
         case accountsError
     }
@@ -124,6 +130,7 @@ struct DashboardProviderPayload: Encodable {
         try container.encode(self.cost, forKey: .cost)
         try container.encode(self.error, forKey: .error)
         try container.encode(self.updatedAt, forKey: .updatedAt)
+        try container.encodeIfPresent(self.allowanceUpdatedAt, forKey: .allowanceUpdatedAt)
         try container.encodeIfPresent(self.accounts, forKey: .accounts)
         try container.encodeIfPresent(self.accountsError, forKey: .accountsError)
     }
@@ -185,16 +192,54 @@ struct DashboardStatusPayload: Encodable {
 struct DashboardIdentityPayload: Encodable {
     let accountEmail: String?
     let plan: String?
+    /// Stable, provider-scoped pseudonym for local history; never an authorization credential.
+    let accountKey: String?
+
+    init(accountEmail: String?, plan: String?, accountKey: String? = nil) {
+        self.accountEmail = accountEmail
+        self.plan = plan
+        self.accountKey = accountKey
+    }
+
+    static func historyAccountKey(
+        providerID: String,
+        email: String?,
+        accountID: String? = nil,
+        organization: String? = nil) -> String?
+    {
+        let accountID = accountID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let owner: String
+        if let accountID, !accountID.isEmpty, accountID != "unknown", !accountID.hasPrefix("redacted") {
+            guard accountID.utf8.count <= 512 else { return nil }
+            owner = "id:" + accountID
+        } else if let email,
+                  let at = email.lastIndex(of: "@"), at > email.startIndex,
+                  email.index(after: at) < email.endIndex,
+                  !email.hasPrefix("redacted@"), email.utf8.count <= 512
+        {
+            owner = "email:" + email
+        } else {
+            return nil
+        }
+        let organization = organization?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard organization.utf8.count <= 512,
+              let scope = try? JSONEncoder().encode(["peel-usage-account-v1", providerID, owner, organization])
+        else { return nil }
+        return "sha256:" + SHA256.hash(data: scope).map { String(format: "%02x", $0) }.joined()
+    }
 
     private enum CodingKeys: String, CodingKey {
         case accountEmail
         case plan
+        case accountKey
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.accountEmail, forKey: .accountEmail)
         try container.encode(self.plan, forKey: .plan)
+        try container.encodeIfPresent(self.accountKey, forKey: .accountKey)
     }
 }
 

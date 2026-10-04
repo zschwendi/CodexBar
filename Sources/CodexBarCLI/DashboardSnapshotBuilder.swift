@@ -147,7 +147,8 @@ enum DashboardSnapshotBuilder {
                 error: error,
                 generatedAt: generatedAt),
             accounts: accounts,
-            accountsError: claudeSwap?.adapterError)
+            accountsError: claudeSwap?.adapterError,
+            allowanceUpdatedAt: payload.usage?.updatedAt)
     }
 
     private static func providerPresentation(
@@ -189,7 +190,15 @@ enum DashboardSnapshotBuilder {
         let presentedEmail = identityMode != .none && sourceEmail?.contains("@") == true
             ? self.dashboardEmail(sourceEmail, mode: identityMode)
             : nil
-        let identity = presentedEmail.map { DashboardIdentityPayload(accountEmail: $0, plan: nil) }
+        let identity = presentedEmail.map {
+            DashboardIdentityPayload(
+                accountEmail: $0,
+                plan: nil,
+                accountKey: DashboardIdentityPayload.historyAccountKey(
+                    providerID: "claude",
+                    email: sourceEmail,
+                    organization: account.accountOrganization))
+        }
         let trimmedLabel = account.displayLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         let fallbackLabel = trimmedLabel.isEmpty ? "Account \(account.id.opaqueID)" : trimmedLabel
         let label = self.claudeSwapDashboardLabel(
@@ -277,8 +286,16 @@ enum DashboardSnapshotBuilder {
 
         let email = self.dashboardEmail(identity.accountEmail, mode: mode)
         let plan = self.dashboardPlan(identity.loginMethod, provider: provider)
-        guard email != nil || plan != nil else { return nil }
-        return DashboardIdentityPayload(accountEmail: email, plan: plan)
+        let accountKey = DashboardIdentityPayload.historyAccountKey(
+            providerID: provider.rawValue,
+            email: identity.accountEmail,
+            accountID: identity.accountID,
+            organization: identity.accountOrganization)
+        guard email != nil || plan != nil || accountKey != nil else { return nil }
+        return DashboardIdentityPayload(
+            accountEmail: email,
+            plan: plan,
+            accountKey: accountKey)
     }
 
     private static func dashboardEmail(_ email: String?, mode: DashboardIdentityMode) -> String? {

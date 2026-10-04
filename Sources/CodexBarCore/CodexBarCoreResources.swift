@@ -84,7 +84,7 @@ public enum CodexBarCoreResources {
     {
         let executableDirectory = executableURL.deletingLastPathComponent()
         guard executableDirectory.lastPathComponent == "Helpers"
-                || executableDirectory.lastPathComponent == "MacOS"
+            || executableDirectory.lastPathComponent == "MacOS"
         else { return nil }
 
         let contentsDirectory = executableDirectory.deletingLastPathComponent()

@@ -8,6 +8,35 @@ struct DashboardClaudeSwapSnapshotTests {
     private let generatedAt = Date(timeIntervalSince1970: 1_800_000_000)
 
     @Test
+    func `reused swap slot with same email keeps different organizations out of one history`() throws {
+        func project(_ organization: String) throws -> (String, ProviderAccountUsageSnapshot) {
+            let accounts = ClaudeSwapAccountProjection.accountSnapshots(
+                from: ClaudeSwapAccountList(
+                    activeAccountNumber: 1,
+                    accounts: [self.accountRow(
+                        number: 1, email: "shared@example.test", organizationName: organization, active: true)]),
+                now: self.generatedAt)
+            let providerRows = try self.providers(
+                identityMode: .redacted,
+                claudeSwap: DashboardClaudeSwapInput(accounts: accounts, adapterError: nil, weeklyWorkDays: nil))
+            let provider = try #require(providerRows.first { $0["id"] as? String == "claude" })
+            let row = try #require((provider["accounts"] as? [[String: Any]])?.first)
+            let identity = try #require(row["identity"] as? [String: Any])
+            let key = try #require(identity["accountKey"] as? String)
+            return try (key, #require(accounts.first))
+        }
+        let first = try project("  Organization A  ")
+        let second = try project("Organization B")
+        let normalized = try project("Organization A")
+        #expect(first.0 != second.0)
+        #expect(first.0 == normalized.0)
+        #expect(first.1.id == second.1.id)
+        #expect(first.1.accountOrganization == "Organization A")
+        #expect(first.1.snapshot?.identity?.accountOrganization == nil)
+        #expect(first.1.snapshot?.identity?.accountID == "claude-swap:1")
+    }
+
+    @Test
     func `projects ordered claude swap accounts with windows pace and redacted identity`() throws {
         let accounts = ClaudeSwapAccountProjection.accountSnapshots(
             from: self.threeAccountList(),

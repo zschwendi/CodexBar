@@ -75,13 +75,12 @@ struct DashboardSnapshotProducer: Sendable {
             rawOverride: nil,
             enabled: config.enabledProviders().compactMap(\.firstPartyProvider))
         let usageOutput = try await self.collectUsage(selection.asList)
-        let costPayloads: [CostPayload]
-        if includeCost {
-            costPayloads = await self.collectCost(
+        let costPayloads: [CostPayload] = if includeCost {
+            await self.collectCost(
                 CodexBarCLI.costProviders(from: selection),
                 config)
         } else {
-            costPayloads = []
+            []
         }
         // Provider-specific by design: claude-swap account enrichment is a
         // Claude-only integration, so provider-filtered snapshots skip it

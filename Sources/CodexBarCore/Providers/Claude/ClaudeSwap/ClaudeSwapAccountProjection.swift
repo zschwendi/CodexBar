@@ -37,11 +37,13 @@ public enum ClaudeSwapAccountProjection {
                 for: row,
                 previous: previousByID[id],
                 now: now)
+            let organization = row.organizationName.trimmingCharacters(in: .whitespacesAndNewlines)
             return ProviderAccountUsageSnapshot(
                 id: id,
                 provider: .claude,
                 displayLabel: label,
                 accountEmail: row.email.isEmpty ? nil : row.email,
+                accountOrganization: organization.isEmpty ? nil : organization,
                 isActive: row.isActive,
                 canActivate: !row.isActive && self.canActivate(row),
                 snapshot: snapshot,
