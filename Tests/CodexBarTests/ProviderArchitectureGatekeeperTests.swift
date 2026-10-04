@@ -2718,14 +2718,6 @@ struct ProviderArchitectureGatekeeperTests {
             reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
         AllowedProviderConstruct(
             path: "Sources/CodexBar/UsageStore+CodexCostCatchUp.swift",
-            line: 280,
-            anchor: "self.lastTokenFetchAt[.codex] = lastRefreshAt",
-            expectedProviderIDs: ["codex"],
-            expectedReferenceCount: 6,
-            expectedReferenceFingerprint: ["codex@0", "codex@1", "codex@4", "codex@4", "codex@7", "codex@9"],
-            reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
-        AllowedProviderConstruct(
-            path: "Sources/CodexBar/UsageStore+CodexCostCatchUp.swift",
             line: 323,
             anchor: "&& self.settings.providerConfigRevision(for: .codex) == context.providerConfigRevision",
             expectedProviderIDs: ["codex"],
@@ -3361,14 +3353,6 @@ struct ProviderArchitectureGatekeeperTests {
             expectedProviderIDs: ["claude"],
             expectedReferenceCount: 1,
             expectedReferenceFingerprint: ["claude@0"],
-            reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
-        AllowedProviderConstruct(
-            path: "Sources/CodexBar/UsageStore+WidgetSnapshot.swift",
-            line: 491,
-            anchor: "let secondaryTitle = if provider == .amp {",
-            expectedProviderIDs: ["alibabatokenplan", "amp"],
-            expectedReferenceCount: 2,
-            expectedReferenceFingerprint: ["amp@0", "alibabatokenplan@2"],
             reason: "This exact app-runtime bridge coordinates provider-owned state through the shared controller."),
         AllowedProviderConstruct(
             path: "Sources/CodexBar/UsageStore+WidgetSnapshot.swift",
